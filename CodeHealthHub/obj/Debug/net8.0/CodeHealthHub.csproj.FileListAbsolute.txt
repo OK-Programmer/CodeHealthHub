@@ -43,3 +43,4 @@ c:\Users\Leo Oh\Capstone Project\CodeHealthHub\bin\Debug\net8.0\Microsoft.Extens
 c:\Users\Leo Oh\Capstone Project\CodeHealthHub\bin\Debug\net8.0\Microsoft.JSInterop.dll
 c:\Users\Leo Oh\Capstone Project\CodeHealthHub\obj\Debug\net8.0\CodeHealthHub.csproj.AssemblyReference.cache
 c:\Users\Leo Oh\Capstone Project\CodeHealthHub\obj\Debug\net8.0\CodeHeal.3B1A7B8A.Up2Date
+c:\Users\Leo Oh\Capstone Project\CodeHealthHub\obj\Debug\net8.0\CodeHealthHub.sourcelink.json

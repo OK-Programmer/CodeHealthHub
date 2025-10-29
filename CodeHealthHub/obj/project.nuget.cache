@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "UReJOF/F6/w=",
+  "dgSpecHash": "8Qxi9Hacw2I=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Leo Oh\\Capstone Project\\CodeHealthHub\\CodeHealthHub.csproj",
+  "projectFilePath": "c:\\Users\\Leo Oh\\Capstone Project\\CodeHealthHub\\CodeHealthHub.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Leo Oh\\.nuget\\packages\\blazorexpress.chartjs\\1.1.0\\blazorexpress.chartjs.1.1.0.nupkg.sha512",
     "C:\\Users\\Leo Oh\\.nuget\\packages\\blazorexpress.core\\0.1.1\\blazorexpress.core.0.1.1.nupkg.sha512",

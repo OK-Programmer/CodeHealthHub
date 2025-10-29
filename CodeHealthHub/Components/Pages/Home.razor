@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using System.Net
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
@@ -48,6 +49,23 @@
         barChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = "Browser", Display = true };
 
         barChartOptions.Plugins.Legend.Display = false;
+
+        var client = new HttpClient();
+        var url = "http://localhost:9000/api/measures/component?metricKeys=ncloc%2Ccode_smells%2Ccomplexity&component=Cloud-and-Distributed-Computing-GYM";
+
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+        request.Headers.Add("Authorization", "Bearer squ_052b04877133168f98afcc452f59b42cf79c0d54");
+
+        var response = client.Send(request);
+
+        System.Diagnostics.Debug.WriteLine($"Sending request to url: {url}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            var content = response.Content.ReadAsStringAsync();
+            System.Diagnostics.Debug.WriteLine(content.Result);
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

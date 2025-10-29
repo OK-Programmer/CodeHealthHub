@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Leo Oh\\Capstone Project\\CodeHealthHub\\CodeHealthHub.csproj": {}
+    "c:\\Users\\Leo Oh\\Capstone Project\\CodeHealthHub\\CodeHealthHub.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Leo Oh\\Capstone Project\\CodeHealthHub\\CodeHealthHub.csproj": {
+    "c:\\Users\\Leo Oh\\Capstone Project\\CodeHealthHub\\CodeHealthHub.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Leo Oh\\Capstone Project\\CodeHealthHub\\CodeHealthHub.csproj",
+        "projectUniqueName": "c:\\Users\\Leo Oh\\Capstone Project\\CodeHealthHub\\CodeHealthHub.csproj",
         "projectName": "CodeHealthHub",
-        "projectPath": "C:\\Users\\Leo Oh\\Capstone Project\\CodeHealthHub\\CodeHealthHub.csproj",
+        "projectPath": "c:\\Users\\Leo Oh\\Capstone Project\\CodeHealthHub\\CodeHealthHub.csproj",
         "packagesPath": "C:\\Users\\Leo Oh\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Leo Oh\\Capstone Project\\CodeHealthHub\\obj\\",
+        "outputPath": "c:\\Users\\Leo Oh\\Capstone Project\\CodeHealthHub\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Leo Oh\\AppData\\Roaming\\NuGet\\NuGet.Config"
