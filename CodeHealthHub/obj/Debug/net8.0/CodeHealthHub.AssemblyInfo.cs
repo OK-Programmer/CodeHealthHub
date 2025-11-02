@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CodeHealthHub")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ab7b64ed5d839c9d73eb1e906efb01de46025863")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6c0e9b8a52f24432abb835f40e27cb74dc9fa496")]
 [assembly: System.Reflection.AssemblyProductAttribute("CodeHealthHub")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CodeHealthHub")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

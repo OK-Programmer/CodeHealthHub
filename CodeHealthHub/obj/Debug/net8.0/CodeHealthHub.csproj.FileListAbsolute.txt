@@ -44,3 +44,5 @@ c:\Users\Leo Oh\Capstone Project\CodeHealthHub\bin\Debug\net8.0\Microsoft.JSInte
 c:\Users\Leo Oh\Capstone Project\CodeHealthHub\obj\Debug\net8.0\CodeHealthHub.csproj.AssemblyReference.cache
 c:\Users\Leo Oh\Capstone Project\CodeHealthHub\obj\Debug\net8.0\CodeHeal.3B1A7B8A.Up2Date
 c:\Users\Leo Oh\Capstone Project\CodeHealthHub\obj\Debug\net8.0\CodeHealthHub.sourcelink.json
+c:\Users\Leo Oh\Capstone Project\CodeHealthHub\bin\Debug\net8.0\Plotly.Blazor.dll
+c:\Users\Leo Oh\Capstone Project\CodeHealthHub\bin\Debug\net8.0\Newtonsoft.Json.dll

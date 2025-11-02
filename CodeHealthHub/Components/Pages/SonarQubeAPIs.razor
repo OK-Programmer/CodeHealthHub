@@ -1,0 +1,175 @@
+﻿@page "/sonarqubeapi"
+@using System
+@using System.Net
+@using Microsoft.AspNetCore.Mvc
+@using Newtonsoft.Json
+@using Plotly.Blazor.Traces.SurfaceLib.ContoursLib.XLib
+@using Plotly.Blazor.Traces.TableLib
+@using Models
+@using System.Diagnostics
+@using System.Diagnostics.CodeAnalysis
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+
+<h3>SonarQube API calls</h3>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg mb-4">
+            <label>All Projects</label>
+            <textarea @bind="allProjects" class="form-control" rows="6" readonly></textarea>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm">
+            <label>Metrics</label>
+            <textarea @bind="metricsResult" class="form-control" rows="6" readonly></textarea>
+            <label>Measures</label>
+            <textarea @bind="measuresResult" class="form-control" rows="6" readonly></textarea>
+        </div>
+        <div class="col-sm">
+            <label>Issues</label>
+            <textarea @bind="issuesResult" class="form-control" rows="6" readonly></textarea>
+            <label>QualityGates</label>
+            <textarea @bind="qualgateResult" class="form-control" rows="6" readonly></textarea>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    string? measuresResult, issuesResult, allProjects, metricsResult, qualgateResult;
+    const string authHeader = "Authorization";
+    const string bearerToken = "Bearer squ_052b04877133168f98afcc452f59b42cf79c0d54";
+    HttpClient client = new HttpClient();
+    List<string> projectKeys = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        getProjects();
+        getMetrics();
+        getAllMeasures();
+        getIssues(projectKeys[0]);
+        getQualityGates(projectKeys[0]);
+    }
+
+    protected UriBuilder formURIBuilder() {
+        UriBuilder builder = new UriBuilder();
+        builder.Scheme = "http";
+        builder.Host = "localhost";
+        builder.Port = 9000;
+        return builder;
+    }
+
+    protected string makeRequest(HttpRequestMessage request) {
+        try {
+            request.Headers.Add(authHeader, bearerToken);
+            HttpResponseMessage? response = client.Send(request);
+            if (response.IsSuccessStatusCode)
+            {
+                Task<string>? content = response.Content.ReadAsStringAsync();
+                return content.Result;
+            }
+            return "";
+        }
+        catch (Exception e) {
+            System.Diagnostics.Debug.WriteLine(e);
+            NavigationManager.NavigateTo("/Error");
+            return "";
+        }
+    }
+
+    protected void getProjects() {
+        allProjects = "";
+
+        UriBuilder? builder = formURIBuilder();
+        builder.Path = "/api/projects/search";
+        Uri? url = builder.Uri;
+
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+
+        ProjectSearchResponse? response = JsonConvert.DeserializeObject<ProjectSearchResponse>(makeRequest(request));
+
+        List<SonarQubeProject>? projects = response?.components;
+        
+        if (projects == null) {
+            return;
+        }
+        else {
+            foreach(SonarQubeProject proj in projects) {
+                projectKeys.Add(proj.key);
+                allProjects += "Key: " + proj.key + " Name: " + proj.name + "\n";
+            }
+        }
+    }
+
+    protected void getMetrics() {
+        metricsResult = "";
+
+        UriBuilder? builder = formURIBuilder();
+        builder.Path = "/api/metrics/search";
+        Uri? url = builder.Uri;
+
+        HttpRequestMessage? request = new HttpRequestMessage(HttpMethod.Get, url);
+
+        object? response = JsonConvert.DeserializeObject(makeRequest(request));
+
+        metricsResult = response?.ToString();
+    }
+
+    protected void getAllMeasures() {
+        measuresResult = "";
+
+        foreach(string key in projectKeys) {
+            getMeasures(key);
+        }
+    }
+
+    protected void getMeasures(string projectKey) {
+        UriBuilder? builder = formURIBuilder();
+        builder.Path = "/api/measures/component";
+        builder.Query = $"metricKeys=ncloc,coverage,bugs,vulnerabilities,code_smells&component={projectKey}";
+        Uri? url = builder.Uri;
+
+        HttpRequestMessage? request = new HttpRequestMessage(HttpMethod.Get, url);
+
+        object? response = JsonConvert.DeserializeObject(makeRequest(request));
+
+        measuresResult += response?.ToString();
+    }
+
+    protected void getAllIssues() {
+        issuesResult = "";
+
+        foreach(string key in projectKeys) {
+            getIssues(key);
+        }
+    }
+
+    protected void getIssues(string projectKey) {
+        UriBuilder? builder = formURIBuilder();
+        builder.Path = "/api/issues/search";
+        @* builder.Query = $"projectKeys={projectKey}"; // don't specify project key to get all issues *@
+        Uri? url = builder.Uri;
+
+        HttpRequestMessage? request = new HttpRequestMessage(HttpMethod.Get, url);
+
+        object? response = JsonConvert.DeserializeObject(makeRequest(request));
+
+        issuesResult += response?.ToString();
+    }
+
+    protected void getQualityGates(string projectKey) {
+        UriBuilder? builder = formURIBuilder();
+        builder.Path = "/api/qualitygates/project_status";
+        builder.Query = $"projectKey={projectKey}";
+        Uri? url = builder.Uri;
+
+        HttpRequestMessage? request = new HttpRequestMessage(HttpMethod.Get, url);
+
+        object? response = JsonConvert.DeserializeObject(makeRequest(request));
+
+        qualgateResult += response?.ToString();
+    }
+}

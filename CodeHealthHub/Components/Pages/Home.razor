@@ -1,5 +1,4 @@
 ﻿@page "/"
-@using System.Net
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
@@ -7,12 +6,12 @@
 <h1>Dashboard</h1>
 
 <div class="row">
-    <div class="col-6">
+    <div class="col">
         <div class="card w-600">
-            <BarChart @ref="barChart" Width="600" />
+            <TestBarChart></TestBarChart>
         </div>
     </div>
-    <div class="col-6">
+    <div class="col">
         <div class="card w-600">
             <SecVulnPie></SecVulnPie>
         </div>
@@ -20,60 +19,4 @@
 </div>
 
 @code {
-    private BarChart barChart = default!;
-    private BarChartOptions barChartOptions = default!;
-    private ChartData chartData = default!;
-
-    protected override void OnInitialized()
-    {
-        var labels = new List<string> { "Chrome", "Firefox", "Safari", "Edge" };
-        var datasets = new List<IChartDataset>();
-
-        var dataset1 = new BarChartDataset()
-        {
-            Data = new List<double?> { 55000, 15000, 18000, 21000 },
-            BackgroundColor = new List<string> { ColorUtility.CategoricalTwelveColors[0] },
-            BorderColor = new List<string> { ColorUtility.CategoricalTwelveColors[0] },
-            BorderWidth = new List<double> { 0 },
-        };
-        datasets.Add(dataset1);
-
-        chartData = new ChartData { Labels = labels, Datasets = datasets };
-
-        barChartOptions = new BarChartOptions();
-        barChartOptions.Responsive = true;
-        barChartOptions.Interaction = new Interaction { Mode = InteractionMode.Y };
-        barChartOptions.IndexAxis = "y";
-
-        barChartOptions.Scales.X!.Title = new ChartAxesTitle { Text = "Visitors", Display = true };
-        barChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = "Browser", Display = true };
-
-        barChartOptions.Plugins.Legend.Display = false;
-
-        var client = new HttpClient();
-        var url = "http://localhost:9000/api/measures/component?metricKeys=ncloc%2Ccode_smells%2Ccomplexity&component=Cloud-and-Distributed-Computing-GYM";
-
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-
-        request.Headers.Add("Authorization", "Bearer squ_052b04877133168f98afcc452f59b42cf79c0d54");
-
-        var response = client.Send(request);
-
-        System.Diagnostics.Debug.WriteLine($"Sending request to url: {url}");
-
-        if (response.IsSuccessStatusCode)
-        {
-            var content = response.Content.ReadAsStringAsync();
-            System.Diagnostics.Debug.WriteLine(content.Result);
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await barChart.InitializeAsync(chartData, barChartOptions);
-        }
-        await base.OnAfterRenderAsync(firstRender);
-    }
 }

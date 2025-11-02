@@ -13,6 +13,7 @@
     <SourceRoot Include="C:\Users\Leo Oh\.nuget\packages\" />
   </ItemGroup>
   <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <Import Project="$(NuGetPackageRoot)plotly.blazor\6.0.2\buildTransitive\Plotly.Blazor.props" Condition="Exists('$(NuGetPackageRoot)plotly.blazor\6.0.2\buildTransitive\Plotly.Blazor.props')" />
     <Import Project="$(NuGetPackageRoot)blazorexpress.chartjs\1.1.0\buildTransitive\BlazorExpress.ChartJS.props" Condition="Exists('$(NuGetPackageRoot)blazorexpress.chartjs\1.1.0\buildTransitive\BlazorExpress.ChartJS.props')" />
   </ImportGroup>
 </Project>

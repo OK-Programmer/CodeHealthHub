@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "8Qxi9Hacw2I=",
+  "dgSpecHash": "8KbNaFBG+S8=",
   "success": true,
   "projectFilePath": "c:\\Users\\Leo Oh\\Capstone Project\\CodeHealthHub\\CodeHealthHub.csproj",
   "expectedPackageFiles": [
@@ -12,12 +12,15 @@
     "C:\\Users\\Leo Oh\\.nuget\\packages\\microsoft.aspnetcore.components.forms\\8.0.17\\microsoft.aspnetcore.components.forms.8.0.17.nupkg.sha512",
     "C:\\Users\\Leo Oh\\.nuget\\packages\\microsoft.aspnetcore.components.web\\8.0.17\\microsoft.aspnetcore.components.web.8.0.17.nupkg.sha512",
     "C:\\Users\\Leo Oh\\.nuget\\packages\\microsoft.aspnetcore.metadata\\8.0.17\\microsoft.aspnetcore.metadata.8.0.17.nupkg.sha512",
+    "C:\\Users\\Leo Oh\\.nuget\\packages\\microsoft.csharp\\4.7.0\\microsoft.csharp.4.7.0.nupkg.sha512",
     "C:\\Users\\Leo Oh\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\8.0.1\\microsoft.extensions.dependencyinjection.8.0.1.nupkg.sha512",
     "C:\\Users\\Leo Oh\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.2\\microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
     "C:\\Users\\Leo Oh\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.3\\microsoft.extensions.logging.abstractions.8.0.3.nupkg.sha512",
     "C:\\Users\\Leo Oh\\.nuget\\packages\\microsoft.extensions.options\\8.0.2\\microsoft.extensions.options.8.0.2.nupkg.sha512",
     "C:\\Users\\Leo Oh\\.nuget\\packages\\microsoft.extensions.primitives\\8.0.0\\microsoft.extensions.primitives.8.0.0.nupkg.sha512",
     "C:\\Users\\Leo Oh\\.nuget\\packages\\microsoft.jsinterop\\8.0.17\\microsoft.jsinterop.8.0.17.nupkg.sha512",
+    "C:\\Users\\Leo Oh\\.nuget\\packages\\newtonsoft.json\\13.0.4\\newtonsoft.json.13.0.4.nupkg.sha512",
+    "C:\\Users\\Leo Oh\\.nuget\\packages\\plotly.blazor\\6.0.2\\plotly.blazor.6.0.2.nupkg.sha512",
     "C:\\Users\\Leo Oh\\.nuget\\packages\\system.io.pipelines\\8.0.0\\system.io.pipelines.8.0.0.nupkg.sha512",
     "C:\\Users\\Leo Oh\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.20\\microsoft.netcore.app.ref.8.0.20.nupkg.sha512",
     "C:\\Users\\Leo Oh\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.20\\microsoft.windowsdesktop.app.ref.8.0.20.nupkg.sha512",
