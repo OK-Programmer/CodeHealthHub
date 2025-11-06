@@ -41,7 +41,9 @@
 @code {
     string? measuresResult, issuesResult, allProjects, metricsResult, qualgateResult;
     const string authHeader = "Authorization";
-    const string bearerToken = "Bearer squ_052b04877133168f98afcc452f59b42cf79c0d54";
+    @* const string bearerToken = "Bearer squ_052b04877133168f98afcc452f59b42cf79c0d54"; *@
+    const string bearerToken = "Bearer squ_50af2bff81e532e8efa21cdee2cb797858907906";
+
     HttpClient client = new HttpClient();
     List<string> projectKeys = new List<string>();
 
@@ -94,6 +96,7 @@
         List<SonarQubeProject>? projects = response?.components;
         
         if (projects == null) {
+            Debug.WriteLine("No projects found.");
             return;
         }
         else {
