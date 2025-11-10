@@ -23,10 +23,8 @@
 
     <div class="row">
         <div class="col-sm">
-            <label>Metrics</label>
-            <textarea @bind="metricsResult" class="form-control" rows="6" readonly></textarea>
-            <label>Measures</label>
-            <textarea @bind="measuresResult" class="form-control" rows="6" readonly></textarea>
+            <label>Deserialized Measures</label>
+            <textarea @bind="deserializedMeasures" class="form-control" rows="6" readonly></textarea>
         </div>
         <div class="col-sm">
             <label>Issues</label>
@@ -39,10 +37,10 @@
 
 
 @code {
-    string? measuresResult, issuesResult, allProjects, metricsResult, qualgateResult;
+    string? measuresResult, deserializedMeasures, issuesResult, allProjects, qualgateResult;
     const string authHeader = "Authorization";
-    @* const string bearerToken = "Bearer squ_052b04877133168f98afcc452f59b42cf79c0d54"; *@
-    const string bearerToken = "Bearer squ_50af2bff81e532e8efa21cdee2cb797858907906";
+    const string bearerToken = "Bearer squ_052b04877133168f98afcc452f59b42cf79c0d54";
+    @* const string bearerToken = "Bearer squ_50af2bff81e532e8efa21cdee2cb797858907906"; *@
 
     HttpClient client = new HttpClient();
     List<string> projectKeys = new List<string>();
@@ -50,9 +48,8 @@
     protected override async Task OnInitializedAsync()
     {
         getProjects();
-        getMetrics();
         getAllMeasures();
-        getIssues(projectKeys[0]);
+        getIssues();
         getQualityGates(projectKeys[0]);
     }
 
@@ -93,7 +90,7 @@
 
         ProjectSearchResponse? response = JsonConvert.DeserializeObject<ProjectSearchResponse>(makeRequest(request));
 
-        List<SonarQubeProject>? projects = response?.components;
+        List<SonarQubeProject>? projects = response?.Components;
         
         if (projects == null) {
             Debug.WriteLine("No projects found.");
@@ -101,24 +98,10 @@
         }
         else {
             foreach(SonarQubeProject proj in projects) {
-                projectKeys.Add(proj.key);
-                allProjects += "Key: " + proj.key + " Name: " + proj.name + "\n";
+                projectKeys.Add(proj.Key);
+                allProjects += "Key: " + proj.Key + " Name: " + proj.Name + "\n";
             }
         }
-    }
-
-    protected void getMetrics() {
-        metricsResult = "";
-
-        UriBuilder? builder = formURIBuilder();
-        builder.Path = "/api/metrics/search";
-        Uri? url = builder.Uri;
-
-        HttpRequestMessage? request = new HttpRequestMessage(HttpMethod.Get, url);
-
-        object? response = JsonConvert.DeserializeObject(makeRequest(request));
-
-        metricsResult = response?.ToString();
     }
 
     protected void getAllMeasures() {
@@ -136,31 +119,42 @@
         Uri? url = builder.Uri;
 
         HttpRequestMessage? request = new HttpRequestMessage(HttpMethod.Get, url);
+        string res = makeRequest(request);
+        MeasureSearchResponse? measureSearchResponse = JsonConvert.DeserializeObject<MeasureSearchResponse>(res);
 
-        object? response = JsonConvert.DeserializeObject(makeRequest(request));
-
-        measuresResult += response?.ToString();
-    }
-
-    protected void getAllIssues() {
-        issuesResult = "";
-
-        foreach(string key in projectKeys) {
-            getIssues(key);
+        if (measureSearchResponse != null) 
+        {
+            foreach(Measure measure in measureSearchResponse.component.measures)
+            {
+                deserializedMeasures += $"Metric: {measure.metric}    Value: {measure.value}\n";
+            }
         }
     }
 
-    protected void getIssues(string projectKey) {
+    protected void getIssues() {
         UriBuilder? builder = formURIBuilder();
         builder.Path = "/api/issues/search";
         @* builder.Query = $"projectKeys={projectKey}"; // don't specify project key to get all issues *@
         Uri? url = builder.Uri;
 
         HttpRequestMessage? request = new HttpRequestMessage(HttpMethod.Get, url);
+        IssueSearchResponse? response = JsonConvert.DeserializeObject<IssueSearchResponse>(makeRequest(request));
 
-        object? response = JsonConvert.DeserializeObject(makeRequest(request));
-
-        issuesResult += response?.ToString();
+        if (response != null)
+        {
+            issuesResult += $"Total issues: {response.total}\n";
+            issuesResult += $"Effort total: {response.effortTotal}\n\n";
+            foreach(Issue issue in response.issues) 
+            {
+                issuesResult += $"Key: {issue.key}\n";
+                issuesResult += $"Project: {issue.project}\n";
+                issuesResult += $"Severity: {issue.severity}\n";
+                issuesResult += $"Effort: {issue.effort}\n";
+                issuesResult += $"Debt: {issue.debt}\n";
+                issuesResult += $"Type: {issue.type}\n";
+                issuesResult += $"Status: {issue.status}\n\n";
+            }
+        }
     }
 
     protected void getQualityGates(string projectKey) {

@@ -4,6 +4,6 @@ namespace CodeHealthHub.Models;
 
 public class ProjectSearchResponse
 {
-    public Paging paging { get; set; }
-    public List<SonarQubeProject> components { get; set; }
+    public required Paging Paging { get; set; }
+    public required List<SonarQubeProject> Components { get; set; }
 }

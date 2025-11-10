@@ -4,6 +4,6 @@ namespace CodeHealthHub.Models;
 
 public class SonarQubeProject()
 {
-    public string key { get; set; }
-    public string name { get; set; }
+    public required string Key { get; set; }
+    public required string Name { get; set; }
 }
