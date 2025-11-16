@@ -1,4 +1,6 @@
-<BarChart @ref="barChart" Width="600"></BarChart>
+<div class="chart-container">
+    <BarChart @ref="barChart"></BarChart>
+</div>
 
 @code {
     private BarChart barChart = default!;
@@ -23,6 +25,7 @@
 
         barChartOptions = new BarChartOptions();
         barChartOptions.Responsive = true;
+        barChartOptions.MaintainAspectRatio = true;
         barChartOptions.Interaction = new Interaction { Mode = InteractionMode.Y };
         barChartOptions.IndexAxis = "y";
 
