@@ -1,0 +1,78 @@
+@page "/instances"
+@using CodeHealthHub.Models
+@inject IHttpClientFactory HttpFactory
+@inject NavigationManager navigationManager
+
+<PageTitle>Instances Management</PageTitle>
+
+<h1>Manage SonarQube Instances</h1>
+
+<p>This is the SonarQube instances management page. Here you can add, edit or remove instances. You can also fetch projects from instances and choose which projects to be included.</p>
+
+<div class="row d-flex justify-content-center">
+    <div class="col-8">
+        <table class="table w-100">
+            <thead>
+                <tr>
+                    <th>Instance ID</th>
+                    <th>Name</th>
+                    <th>URL</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var instance in instances)
+                {
+                <tr>
+                    <td>@instance.Id</td>
+                    <td>@instance.Name</td>
+                    <td>@URLs.ElementAt(instance.Id-1)</td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary">Edit</button>
+                        <button class="btn btn-sm btn-danger">Delete</button>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row d-flex justify-content-center">
+    <div class="col-8 text-end">
+        <button class="btn btn-primary px-4">Add</button> 
+    </div>
+</div>
+
+
+@code
+{
+    List<SonarQubeInstance> instances = new List<SonarQubeInstance>();
+    List<string> URLs = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var allInstancesURL = "api/instances/all";
+        var client = HttpFactory.CreateClient("LocalApi");
+        try
+        {
+            instances = await client.GetFromJsonAsync<List<SonarQubeInstance>>(allInstancesURL) ?? new List<SonarQubeInstance>();
+            foreach(var instance in instances)
+            {
+                URLs.Add(
+                    new UriBuilder()
+                    {
+                        Scheme = instance.Scheme,
+                        Host = instance.Host,
+                        Port = instance.Port,
+                    }.Uri.ToString()
+                );
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching instances: {ex.Message}");
+            navigationManager.NavigateTo("/Error");
+        }
+    }
+}

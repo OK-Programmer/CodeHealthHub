@@ -27,7 +27,6 @@ if (!app.Environment.IsDevelopment())
     app.UseMigrationsEndPoint();
 }
 
-// Add these lines to map controllers
 app.UseRouting();
 
 app.UseHttpsRedirection();

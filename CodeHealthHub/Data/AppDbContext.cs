@@ -11,4 +11,6 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<SonarQubeProject> SonarQubeProjects { get; set; }
+
+    public DbSet<SonarQubeInstance> SonarQubeInstances { get; set; }
 }

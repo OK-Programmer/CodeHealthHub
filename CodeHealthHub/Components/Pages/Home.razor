@@ -81,6 +81,7 @@ else
         <div class="card">
             <div class="card-body">
                 <h4 class="card-title">Health Score</h4>
+                <p class="card-text">Overall Health Score: @overallHealthScore</p>
             </div>
         </div>
     </div>
@@ -130,6 +131,7 @@ else
     private List<Issue>? issues = new List<Issue>();
     private int? issuesCount, effortTotal;
     private bool showProjectsTable = true;
+    private string overallHealthScore;
 
     protected override async Task OnInitializedAsync()
     {
@@ -137,6 +139,7 @@ else
         {
             await GetProjects();
             await GetIssues();
+            await GetMeasures();
         }
         catch (Exception e)
         {
@@ -151,7 +154,6 @@ else
         {
             var requestUri = "api/dashboard/projects";
             HttpClient httpClient = HttpFactory.CreateClient("LocalApi");
-            Debug.WriteLine($"Calling URL: {httpClient.BaseAddress}{requestUri}");
             projects = await httpClient.GetFromJsonAsync<List<SonarQubeProject>>(requestUri);
             if (projects != null)
             {
@@ -190,6 +192,102 @@ else
         }
     }
 
+    protected async Task GetMeasures()
+    {
+        List<ProjectHealthScore>? allMeasures = new List<ProjectHealthScore>();
+        string? requestUri = "api/dashboard/measures";
+        HttpClient httpClient = HttpFactory.CreateClient("LocalApi");
+        Debug.WriteLine($"Calling URL: {httpClient.BaseAddress}{requestUri}");
+        try 
+        {
+            List<List<Measure>>? measuresResponse = await httpClient.GetFromJsonAsync<List<List<Measure>>>(requestUri);
+            if (measuresResponse != null)
+            {
+                foreach(List<Measure> measureList in measuresResponse)
+                {
+                    ProjectHealthScore phs = new ProjectHealthScore(){
+                        Vulnerability = (int)float.Parse(measureList.Find(m => m.metric == "security_rating")?.value ?? "0.0"),
+                        Bugs = (int)float.Parse(measureList.Find(m => m.metric == "reliability_rating")?.value ?? "0.0"),
+                        CodeSmells = (int)float.Parse(measureList.Find(m => m.metric == "sqale_rating")?.value ?? "0.0"),
+                        SecHotspots = (int)float.Parse(measureList.Find(m => m.metric == "security_review_rating")?.value ?? "0.0"),
+                    };
+                    allMeasures.Add(phs);
+                }
+                CalculateHealthScore(allMeasures);
+                StateHasChanged();
+            }
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    protected void CalculateHealthScore(List<ProjectHealthScore> allMeasures)
+    {
+        int sum = 0;
+        List<float> weights = CreateWeights(4); // Placeholder for future weight creation logic
+        for(int i = 0; i < allMeasures.Count; i++)
+        {
+            ProjectHealthScore phs = allMeasures[i];
+            int avgPHS = (int)Math.Ceiling((decimal)
+                (
+                    phs.Vulnerability * weights[0] + 
+                    phs.Bugs * weights[1] + 
+                    phs.CodeSmells * weights[2] + 
+                    phs.SecHotspots * weights[3]
+                ) / 4);
+            sum += avgPHS;
+        }
+        float ohs = (float)Math.Ceiling((double)sum / allMeasures.Count); // overall health score
+        TranslateHealthScore(ohs);
+    }
+
+    protected void TranslateHealthScore(float score)
+    {
+        string grade = "";
+        switch(score)
+        {
+            case 5.0f:
+                grade = "E";
+                break;
+            case 4.0f:
+                grade = "D";
+                break;
+            case 3.0f:
+                grade = "C";
+                break;
+            case 2.0f:
+                grade = "B";
+                break;
+            case 1.0f:
+                grade = "A";
+                break;
+            default:
+                break;
+        }
+        overallHealthScore = grade;
+    }
+
+    // Placeholder for future weight creation logic
+    protected List<float> CreateWeights(int numOfWeights)
+    {
+        // Generate the given number of weights randomly so that they sum to 1
+        Random random = new Random();
+        List<float> weights = new List<float>();
+        int totalWeight = 0;
+
+        for (int i = 0; i < numOfWeights; i++)
+        {
+            int weight = random.Next(1, 100);
+            weights.Add(weight);
+            totalWeight += weight;
+        }
+
+        weights = weights.Select(w => w / totalWeight).ToList();
+        return weights;
+    }
+
     protected string FormatDate(string input)
     {
         var dto = DateTimeOffset.ParseExact(
@@ -226,7 +324,14 @@ else
 
     protected void ToggleProjectsTable()
     {
-        // Logic to show/hide projects table can be implemented here
         showProjectsTable = !showProjectsTable;
+    }
+
+    public struct ProjectHealthScore
+    {
+        public int Vulnerability;
+        public int Bugs;
+        public int CodeSmells;
+        public int SecHotspots;
     }
 }
