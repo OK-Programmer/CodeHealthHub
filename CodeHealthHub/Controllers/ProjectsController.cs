@@ -19,6 +19,96 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
     [HttpGet("all")]
     public async Task<ActionResult<List<SonarQubeProject>>> GetAllProjects() {
         List<SonarQubeProject> projects = await _dbContext.SonarQubeProjects.ToListAsync();
-        return Ok(projects);
+        if (projects == null) { return NotFound(); }
+        else { return Ok(projects); }
+    }
+
+    // TODO: Change from single project update to update all projects weights at once    
+    [HttpPut("update/{id}")]
+    public async Task<ActionResult> UpdateProjectWeight(int id, [FromBody] double newWeight) {
+        SonarQubeProject? project = await _dbContext.SonarQubeProjects.FindAsync(id);
+        
+        if (project == null) 
+        {
+            return BadRequest("Unable to find project with given ID.");
+        }
+        else 
+        {
+            if (project.Weight == newWeight) 
+            {
+                // No change in weight
+                return Ok();
+            }
+            else 
+            {
+                project.Weight = newWeight;
+                await _dbContext.SaveChangesAsync();
+                return Ok();
+            }
+        }
+    }
+
+    [HttpGet("refresh")]
+    public async Task<ActionResult> FetchAndUpdateProjects() {
+        List<UriBuilder>? builders = Utility.GetInstancesURIBuilders(_dbContext);
+        List<SonarQubeProject>? projects = [];
+
+        // Call project search API for each SonarQube instance to get all projects from sonarqube
+        foreach (UriBuilder builder in builders)
+        {
+            builder.Path = "/api/projects/search";
+            Uri? uri = builder.Uri;
+            HttpRequestMessage request = new(HttpMethod.Get, uri);
+            string? response = await Utility.MakeRequest(request);
+            if (response == null) 
+            {
+                Debug.WriteLine("FetchAndUpdateProjects(): No response from project search API");
+                return NotFound("FetchAndUpdateProjects(): No response from project search API");
+            }
+            else
+            {
+                ProjectSearchResponse? projSearchRes = JsonConvert.DeserializeObject<ProjectSearchResponse>(response);
+                if (projSearchRes == null || projSearchRes.Components == null) 
+                {
+                    Debug.WriteLine("FetchAndUpdateProjects(): Null deserialized project search response");
+                    return NotFound("FetchAndUpdateProjects(): Null deserialized project search response");
+                }
+                else
+                {
+                    projects.AddRange(projSearchRes.Components);
+                }
+            }
+        }
+
+        if (projects == null) {
+            Debug.WriteLine("No projects found.");
+            return NotFound();
+        }
+        else {
+            // Store new projects in database
+            foreach(SonarQubeProject project in projects)
+            {
+                bool projectExists = await _dbContext.SonarQubeProjects.AnyAsync(p => p.Key == project.Key);
+                if (!projectExists)
+                {
+                    _dbContext.SonarQubeProjects.Add(project);
+                }
+            }
+            await _dbContext.SaveChangesAsync();
+            RecalculateWeights();
+            return Ok();
+        }
+    }
+
+    protected void RecalculateWeights() {
+        List<SonarQubeProject> projects = _dbContext.SonarQubeProjects.ToList();
+        double weight = 1.0 / projects.Count;
+
+        foreach (SonarQubeProject project in projects) {
+            project.Weight = weight;
+            _dbContext.SonarQubeProjects.Update(project);
+        }
+
+        _dbContext.SaveChanges();
     }
 }

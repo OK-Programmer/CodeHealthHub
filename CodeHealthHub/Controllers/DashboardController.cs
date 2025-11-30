@@ -1,12 +1,9 @@
-using System;
 using Microsoft.AspNetCore.Mvc;
 using CodeHealthHub.Models;
 using Newtonsoft.Json;
 using System.Diagnostics;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using CodeHealthHub.Data;
+using System.Reflection.Metadata.Ecma335;
 
 namespace CodeHealthHub.Controllers;
 
@@ -14,92 +11,18 @@ namespace CodeHealthHub.Controllers;
 [Route("api/[controller]")]
 public class DashboardController(AppDbContext dbContext) : ControllerBase
 {
-    private const string authHeader = "Authorization";
-    private readonly string bearerToken = "Bearer " + Environment.GetEnvironmentVariable("SonarUserToken");
     private readonly AppDbContext _dbContext = dbContext;
-    readonly HttpClient client = new();
 
-    protected List<UriBuilder> GetURIBuilders() {
-        // Fetch SonarQube instances from DB
-        List<SonarQubeInstance> instances = _dbContext.SonarQubeInstances.ToList();
-        List<UriBuilder> builders = [];
+    protected void RecalculateWeights() {
+        List<SonarQubeProject> projects = _dbContext.SonarQubeProjects.ToList();
+        double weight = 1.0 / projects.Count;
 
-        // Create URI builders for each instance
-        foreach (SonarQubeInstance instance in instances) {
-            UriBuilder builder = new()
-            {
-                Scheme = instance.Scheme,
-                Host = instance.Host,
-                Port = instance.Port
-            };
-            builders.Add(builder);
+        foreach (SonarQubeProject project in projects) {
+            project.Weight = weight;
+            _dbContext.SonarQubeProjects.Update(project);
         }
 
-        // Return list of URI builders/all SonarQube instances
-        return builders;
-    }
-
-    protected async Task<string> MakeRequest(HttpRequestMessage request) {
-        try 
-        {
-            request.Headers.Add(authHeader, bearerToken);
-            HttpResponseMessage? response = await client.SendAsync(request);
-            if (response.IsSuccessStatusCode)
-            {
-                Task<string>? content = response.Content.ReadAsStringAsync();
-                return content.Result;
-            }
-            else
-            {
-                Debug.WriteLine("Request failed:");
-                Debug.WriteLine(request.Headers);
-                Debug.WriteLine(response.Content);
-                return "";
-            }
-        }
-        catch (Exception e) 
-        {
-            Debug.WriteLine(e);
-            Url.Action("/Error");
-            return "";
-        }
-    }
-
-    [HttpGet("refresh-projects")]
-    public async Task<ActionResult> FetchProjects() {
-        List<UriBuilder>? builders = GetURIBuilders();
-        List<SonarQubeProject>? projects = [];
-
-        // Call project search API for each SonarQube instance to get all chosen projects
-        foreach (UriBuilder builder in builders)
-        {
-            builder.Path = "/api/projects/search";
-            Uri? uri = builder.Uri;
-            HttpRequestMessage request = new(HttpMethod.Get, uri);
-            ProjectSearchResponse? response = JsonConvert.DeserializeObject<ProjectSearchResponse>(await MakeRequest(request));
-            if (response != null && response.Components != null)
-            {
-                projects.AddRange(response.Components);
-            }
-        }
-
-        if (projects == null) {
-            Debug.WriteLine("No projects found.");
-            return NotFound();
-        }
-        else {
-            // Store new projects in the database
-            foreach(SonarQubeProject project in projects)
-            {
-                var projectExists = await _dbContext.SonarQubeProjects.AnyAsync(p => p.Key == project.Key);
-                if (!projectExists)
-                {
-                    _dbContext.SonarQubeProjects.Add(project);
-                    _dbContext.SaveChanges();
-                }
-            }
-            return Ok();
-        }
+        _dbContext.SaveChanges();
     }
 
     [HttpGet("projects")]
@@ -120,7 +43,7 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
     [HttpGet("measures")]
     public async Task<ActionResult<List<List<Measure>>>> GetAllMeasures() {
         // Get URI builders for all SonarQube instances
-        List<UriBuilder> builders = GetURIBuilders();
+        List<UriBuilder> builders = Utility.GetInstancesURIBuilders(_dbContext);
         // Fetch all project keys from the database
         List<string> projectKeys = _dbContext.SonarQubeProjects.Select(p => p.Key).ToList();
         List<List<Measure>> listOfMeasures = [];
@@ -130,8 +53,16 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
             builder.Path = "/api/measures/component";
             foreach(string key in projectKeys) {
                 // for each project key, fetch measures
-                List<Measure> measures = await GetMeasures(builder, key);
-                listOfMeasures.Add(measures);
+                List<Measure>? measures = await GetMeasures(builder, key);
+                if (measures == null) 
+                { 
+                    Debug.WriteLine($"GetAllMeasures(): No measures found for project {key}"); 
+                    break;
+                }
+                else
+                { 
+                    listOfMeasures.Add(measures); 
+                }
             }
         }
 
@@ -145,7 +76,7 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
         }
     }
 
-    protected async Task<List<Measure>> GetMeasures(UriBuilder uriBuilder, string projectKey) {
+    protected async Task<List<Measure>?> GetMeasures(UriBuilder uriBuilder, string projectKey) {
         List<MeasureSearchResponse?> measureSearchResponses = [];
         List<string> healthScoreMetrics = ["security_rating", "reliability_rating", "sqale_rating", "security_review_rating"];
 
@@ -156,17 +87,26 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
         Debug.WriteLine($"Fetching measures for project {projectKey} from {uri}");
 
         HttpRequestMessage? request = new(HttpMethod.Get, uri);
-        string response = await MakeRequest(request);
-        if (response != "")
+        string? response = await Utility.MakeRequest(request);
+        if (response == null)
         {
+            Debug.WriteLine("GetMeasures(): Null response from request");
+            return null; 
+        }
+        else 
+        { 
             measureSearchResponses.AddRange(JsonConvert.DeserializeObject<MeasureSearchResponse>(response));
         }
 
         // Combine measures from API response into a single list
-        if (measureSearchResponses != null)
+        if (measureSearchResponses == null)
+        {
+            Debug.WriteLine("GetMeasures(): No measures found in response");
+            return null;
+        }
+        else
         {
             List<Measure> measures = [];
-
             foreach (MeasureSearchResponse? measureResponse in measureSearchResponses)
             {
                 if (measureResponse != null && measureResponse.component.measures != null)
@@ -174,13 +114,7 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
                     measures.AddRange(measureResponse.component.measures);
                 }
             }
-
             return measures;
-        }
-        else
-        {
-            Debug.WriteLine("GetMeasures(): No measures found. Returning empty list.");
-            return [];
         }
     }
 
@@ -188,9 +122,8 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
     public async Task<ActionResult<List<Issue>>> GetIssues() {
         int pageNumber = 1;
         IssueSearchResponse response = new();
-        List<UriBuilder> builders = GetURIBuilders();
+        List<UriBuilder> builders = Utility.GetInstancesURIBuilders(_dbContext);
 
-        //TODO: Handle multiple instances properly
         foreach (UriBuilder builder in builders)
         {
             builder.Path = "/api/issues/search";
@@ -200,10 +133,22 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
                 builder.Query = $"p={pageNumber}&ps=500";
                 Uri? url = builder.Uri;
                 HttpRequestMessage? request = new(HttpMethod.Get, url);
-                IssueSearchResponse? currentResponse = JsonConvert.DeserializeObject<IssueSearchResponse>(await MakeRequest(request));
-                if (currentResponse != null)
+                string? responseContent = await Utility.MakeRequest(request);
+                if (responseContent == null) 
+                { 
+                    Debug.WriteLine("GetIssues(): Empty response from request");
+                    return NotFound(); 
+                }
+
+                IssueSearchResponse? currentResponse = JsonConvert.DeserializeObject<IssueSearchResponse>(responseContent);
+                if (currentResponse == null)
                 {
-                    Debug.WriteLine($"Page {pageNumber} of issues retrieved. Total issues so far: {response.issues.Count}");
+                    Debug.WriteLine("GetIssues(): No issues found in response");
+                    return NotFound();
+                }
+                else
+                {
+                    Debug.WriteLine($"Page {pageNumber} of issues retrieved. Total issues so far: {response?.issues.Count}");
                     if (pageNumber == 1)
                     {
                         response = currentResponse;
@@ -212,6 +157,7 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
                     {
                         response?.issues.AddRange(currentResponse.issues);
                     }
+
                     pageNumber++;
                 }
             } while (response != null && response.issues.Count < response.total);
@@ -227,24 +173,24 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
         }
     }
 
-    public async Task GetQualityGates(string projectKey) {
-        List<UriBuilder> builders = GetURIBuilders();
+    // public async Task GetQualityGates(string projectKey) {
+    //     List<UriBuilder> builders = Utility.GetInstancesURIBuilders(_dbContext);
 
-        //TODO: Handle multiple instances properly
-        foreach (UriBuilder builder in builders)
-        {
-            builder.Path = "/api/qualitygates/project_status";
-            builder.Query = $"projectKey={projectKey}";
-            Uri? url = builder.Uri;
+    //     //TODO: Handle multiple instances properly
+    //     foreach (UriBuilder builder in builders)
+    //     {
+    //         builder.Path = "/api/qualitygates/project_status";
+    //         builder.Query = $"projectKey={projectKey}";
+    //         Uri? url = builder.Uri;
 
-            HttpRequestMessage? request = new HttpRequestMessage(HttpMethod.Get, url);
+    //         HttpRequestMessage? request = new HttpRequestMessage(HttpMethod.Get, url);
 
-            object? response = JsonConvert.DeserializeObject(await MakeRequest(request));
+    //         object? response = JsonConvert.DeserializeObject(await Utility.MakeRequest(request));
 
-            if (response != null) 
-            {
-                Debug.WriteLine(response.ToString());
-            }
-        }
-    }
+    //         if (response != null) 
+    //         {
+    //             Debug.WriteLine(response.ToString());
+    //         }
+    //     }
+    // }
 }

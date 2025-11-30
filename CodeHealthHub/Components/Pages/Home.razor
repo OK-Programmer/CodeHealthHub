@@ -45,6 +45,7 @@ else
                                 <th scope="col">#</th>
                                 <th scope="col">Project Name</th>
                                 <th scope="col">Last Analysis Date</th>
+                                <th scope="col">Weight</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -64,6 +65,7 @@ else
                                         <td scope="row">@project.Id</td>
                                         <td>@project.Name</td>
                                         <td>@FormatDate(project.LastAnalysisDate)</td>
+                                        <td>@String.Format("{0:0.000}", project.Weight)</td>
                                     </tr>
                                 }
                             }
@@ -130,8 +132,8 @@ else
     private IssueSearchResponse? issueSearchResponse = new IssueSearchResponse();
     private List<Issue>? issues = new List<Issue>();
     private int? issuesCount, effortTotal;
-    private bool showProjectsTable = true;
-    private string overallHealthScore;
+    private bool showProjectsTable = true; 
+    private string? overallHealthScore;
 
     protected override async Task OnInitializedAsync()
     {
@@ -194,7 +196,7 @@ else
 
     protected async Task GetMeasures()
     {
-        List<ProjectHealthScore>? allMeasures = new List<ProjectHealthScore>();
+        List<ProjectHealthScore>? allProjectHealthScores = new List<ProjectHealthScore>();
         string? requestUri = "api/dashboard/measures";
         HttpClient httpClient = HttpFactory.CreateClient("LocalApi");
         Debug.WriteLine($"Calling URL: {httpClient.BaseAddress}{requestUri}");
@@ -211,9 +213,9 @@ else
                         CodeSmells = (int)float.Parse(measureList.Find(m => m.metric == "sqale_rating")?.value ?? "0.0"),
                         SecHotspots = (int)float.Parse(measureList.Find(m => m.metric == "security_review_rating")?.value ?? "0.0"),
                     };
-                    allMeasures.Add(phs);
+                    allProjectHealthScores.Add(phs);
                 }
-                CalculateHealthScore(allMeasures);
+                CalculateOverallHealthScore(allProjectHealthScores);
                 StateHasChanged();
             }
         }
@@ -223,27 +225,29 @@ else
         }
     }
 
-    protected void CalculateHealthScore(List<ProjectHealthScore> allMeasures)
+    protected void CalculateOverallHealthScore(List<ProjectHealthScore> allProjectHealthScores)
     {
-        int sum = 0;
-        List<float> weights = CreateWeights(4); // Placeholder for future weight creation logic
-        for(int i = 0; i < allMeasures.Count; i++)
+        List<double> listOfAvgPHS = new List<double>();
+        List<double> weights = (from project in projects select project.Weight).ToList();
+        // for each project, sum up the health scores
+        for(int i = 0; i < allProjectHealthScores.Count; i++)
         {
-            ProjectHealthScore phs = allMeasures[i];
-            int avgPHS = (int)Math.Ceiling((decimal)
+            ProjectHealthScore phs = allProjectHealthScores[i];
+            double avgPHS = Math.Ceiling((double)
                 (
-                    phs.Vulnerability * weights[0] + 
-                    phs.Bugs * weights[1] + 
-                    phs.CodeSmells * weights[2] + 
-                    phs.SecHotspots * weights[3]
+                    phs.Vulnerability + 
+                    phs.Bugs + 
+                    phs.CodeSmells + 
+                    phs.SecHotspots
                 ) / 4);
-            sum += avgPHS;
+            listOfAvgPHS.Add(avgPHS);
         }
-        float ohs = (float)Math.Ceiling((double)sum / allMeasures.Count); // overall health score
+        double sum = listOfAvgPHS.Zip(weights, (w, PHS) => w * PHS).Sum();
+        double ohs = Math.Ceiling((1.0/(double)allProjectHealthScores.Count) * sum); // overall health score
         TranslateHealthScore(ohs);
     }
 
-    protected void TranslateHealthScore(float score)
+    protected void TranslateHealthScore(double score)
     {
         string grade = "";
         switch(score)
@@ -264,20 +268,21 @@ else
                 grade = "A";
                 break;
             default:
+                grade = "N/A";
                 break;
         }
         overallHealthScore = grade;
     }
 
     // Placeholder for future weight creation logic
-    protected List<float> CreateWeights(int numOfWeights)
+    protected List<double> CreateWeights(int numOfProjects)
     {
         // Generate the given number of weights randomly so that they sum to 1
         Random random = new Random();
-        List<float> weights = new List<float>();
+        List<double> weights = new List<double>();
         int totalWeight = 0;
 
-        for (int i = 0; i < numOfWeights; i++)
+        for (int i = 0; i < numOfProjects; i++)
         {
             int weight = random.Next(1, 100);
             weights.Add(weight);

@@ -8,4 +8,5 @@ public class SonarQubeProject()
     public required string Key { get; set; }
     public required string Name { get; set; }
     public required string LastAnalysisDate { get; set; }
+    public required double Weight { get; set; } = 0.0;
 }
