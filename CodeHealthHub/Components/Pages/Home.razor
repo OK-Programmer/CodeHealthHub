@@ -9,75 +9,6 @@
 
 <h1>Dashboard</h1>
 
-<div class="d-flex justify-content-end mb-4">
-    @if(showProjectsTable)
-    {
-        <button type="button" class="btn btn-sm btn-outline-dark" @onclick="ToggleProjectsTable">Hide Projects</button>
-    }
-    else
-    {
-        <button type="button" class="btn btn-sm btn-outline-dark" @onclick="ToggleProjectsTable">Show Projects</button>
-    }
-    <button type="button" class="btn btn-sm btn-outline-dark ms-1" @onclick="RefreshProjects">Refresh Project Data</button>
-</div>
-
-@if (!showProjectsTable)
-{
-    <div class="row mb-4">
-        <div class="col">
-            <div class="card">
-                <div class="card-body">
-                    Projects table is hidden
-                </div>
-            </div>
-        </div>
-    </div>
-}
-else
-{
-    <div class="row mb-4">
-        <div class="col">
-            <div class="card">
-                <div class="table-responsive p-3">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">Project Name</th>
-                                <th scope="col">Last Analysis Date</th>
-                                <th scope="col">Weight</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (projects == null) 
-                            {
-                                <p>Loading...</p>
-                            }
-                            else if (!projects.Any())
-                            {
-                                <p>No project data found.</p>
-                            }
-                            else
-                            {
-                                @foreach(SonarQubeProject project in projects)
-                                {
-                                    <tr>
-                                        <td scope="row">@project.Id</td>
-                                        <td>@project.Name</td>
-                                        <td>@FormatDate(project.LastAnalysisDate)</td>
-                                        <td>@String.Format("{0:0.000}", project.Weight)</td>
-                                    </tr>
-                                }
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-
 <div class="row mb-4">
     <div class="col">
         <div class="card">
@@ -117,7 +48,15 @@ else
 <div class="row mb-4">
     <div class="col">
         <div class="card">
-            <TestBarChart></TestBarChart>
+            <ProjectsTable projects=@projects></ProjectsTable>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <div class="card">
+            <TestBarChart Issues=@issues></TestBarChart>
         </div>
     </div>
     <div class="col">
@@ -132,7 +71,6 @@ else
     private IssueSearchResponse? issueSearchResponse = new IssueSearchResponse();
     private List<Issue>? issues = new List<Issue>();
     private int? issuesCount, effortTotal;
-    private bool showProjectsTable = true; 
     private string? overallHealthScore;
 
     protected override async Task OnInitializedAsync()
@@ -291,45 +229,6 @@ else
 
         weights = weights.Select(w => w / totalWeight).ToList();
         return weights;
-    }
-
-    protected string FormatDate(string input)
-    {
-        var dto = DateTimeOffset.ParseExact(
-            input,
-            "yyyy-MM-dd'T'HH:mm:ssK",
-            System.Globalization.CultureInfo.InvariantCulture
-        );
-        TimeZoneInfo sgZone = TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
-        DateTime sgTime = TimeZoneInfo.ConvertTime(dto.UtcDateTime, sgZone);
-        string formatted = sgTime.ToString("dd MMM yyyy HH:mm:ss");
-        return formatted;
-    }
-
-    protected async Task RefreshProjects()
-    {
-        try 
-        {
-            var requestUri = "api/dashboard/refresh-projects";
-            HttpClient httpClient = HttpFactory.CreateClient("LocalApi");
-            Debug.WriteLine($"Calling URL: {httpClient.BaseAddress}{requestUri}");
-            HttpResponseMessage response = await httpClient.GetAsync(requestUri);
-            if (response != null)
-            {
-                response.EnsureSuccessStatusCode();
-                navigationManager.NavigateTo("/", forceLoad: true);
-            }
-        }
-        catch (Exception e)
-        {
-            Debug.WriteLine("Error refreshing projects data " + e);
-            navigationManager.NavigateTo("/Error");
-        }
-    }
-
-    protected void ToggleProjectsTable()
-    {
-        showProjectsTable = !showProjectsTable;
     }
 
     public struct ProjectHealthScore

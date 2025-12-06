@@ -1,38 +1,62 @@
+@using CodeHealthHub.Models
+
 <div class="chart-container">
     <BarChart @ref="barChart"></BarChart>
 </div>
 
 @code {
+    @* [Parameter]
+    public List<SonarQubeProject>? Projects { get; set; } *@
+    [Parameter]
+    public List<Issue>? Issues { get; set; }
+    private List<Issue>? previousIssues = null;
     private BarChart barChart = default!;
     private BarChartOptions barChartOptions = default!;
     private ChartData chartData = default!;
+    private bool chartInitialized = false;
 
     protected override void OnInitialized()
     {
-        var labels = new List<string> { "Chrome", "Firefox", "Safari", "Edge" };
-        var datasets = new List<IChartDataset>();
-
-        var dataset1 = new BarChartDataset()
-        {
-            Data = new List<double?> { 55000, 15000, 18000, 21000 },
-            BackgroundColor = new List<string> { ColorUtility.CategoricalTwelveColors[0] },
-            BorderColor = new List<string> { ColorUtility.CategoricalTwelveColors[0] },
-            BorderWidth = new List<double> { 0 },
-        };
-        datasets.Add(dataset1);
-
-        chartData = new ChartData { Labels = labels, Datasets = datasets };
-
         barChartOptions = new BarChartOptions();
         barChartOptions.Responsive = true;
         barChartOptions.MaintainAspectRatio = true;
         barChartOptions.Interaction = new Interaction { Mode = InteractionMode.Y };
         barChartOptions.IndexAxis = "y";
 
-        barChartOptions.Scales.X!.Title = new ChartAxesTitle { Text = "Visitors", Display = true };
-        barChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = "Browser", Display = true };
+        barChartOptions.Scales.X!.Title = new ChartAxesTitle { Text = "Number of Issues", Display = true };
+        barChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = "Proejct", Display = true };
 
         barChartOptions.Plugins.Legend.Display = false;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Only rebuild if Issues data actually changed
+        if (!ReferenceEquals(Issues, previousIssues))
+        {
+            previousIssues = Issues;
+            
+            if (Issues != null && Issues.Any())
+            {
+                var labels = Issues.Select(i => i.project).Distinct().ToList();
+                var datasets = new List<IChartDataset>();
+
+                var dataset1 = new BarChartDataset()
+                {
+                    Data = GetDataPoints(),
+                    BackgroundColor = new List<string> { ColorUtility.CategoricalTwelveColors[0] },
+                    BorderColor = new List<string> { ColorUtility.CategoricalTwelveColors[0] },
+                    BorderWidth = new List<double> { 0 },
+                };
+                datasets.Add(dataset1);
+
+                chartData = new ChartData { Labels = labels, Datasets = datasets };
+            }
+            else
+            {
+                chartData = new ChartData { Labels = new List<string>(), Datasets = new List<IChartDataset>() };
+            }
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -40,7 +64,32 @@
         if (firstRender)
         {
             await barChart.InitializeAsync(chartData, barChartOptions);
+            chartInitialized = true;
+        }
+        else if (chartInitialized && Issues != null && Issues.Any())
+        {
+            // If chart already initialized but data changed, update it
+            await barChart.UpdateAsync(chartData, barChartOptions);
         }
         await base.OnAfterRenderAsync(firstRender);
+    }
+
+    protected List<double?> GetDataPoints()
+    {
+        List<double?> dataPoints = new();
+        if (Issues != null && Issues.Any())
+        {
+            var labels = Issues.Select(i => i.project).Distinct().ToList();
+            foreach(var label in labels)
+            {
+                var count = Issues.Count(i => i.project == label);
+                dataPoints.Add(count);
+            }
+            return dataPoints;
+        }
+        else 
+        { 
+            return new List<double?>();
+        }
     }
 }
