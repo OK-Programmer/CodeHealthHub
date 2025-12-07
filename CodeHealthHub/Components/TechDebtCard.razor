@@ -1,0 +1,37 @@
+﻿@using CodeHealthHub.Models
+
+<div class="card-body">
+    <h4 class="card-title">Tech Debt</h4>
+    <p class="card-text">
+        Unified Tech Debt: @String.Format("{0:00}", utd) hrs<br />
+        Unified Tech Debt Cost: $@utdCost
+    </p>
+</div>
+
+@code {
+    [Parameter]
+    public List<Measure> measures { get; set; } = new List<Measure>();
+    private double utd = 0.0;
+    private double utdCost = 0.0;
+
+    protected override void OnParametersSet()
+    {
+        double totalDebtMinutes = 0.0;
+        double hourlyRate = 75.0; // This can be modified to take input from user or configuration
+        int numOfEmployees = 1; // This can be modified to take input from user or configuration
+        foreach (var measure in measures)
+        {
+            if (measure.metric == "sqale_index" || 
+                measure.metric == "reliability_remediation_effort" || 
+                measure.metric == "security_remediation_effort")
+            {
+                if (double.TryParse(measure.value, out double debtMinutes))
+                {
+                    totalDebtMinutes += debtMinutes;
+                }
+            }
+        }
+        utd = totalDebtMinutes / 60.0; // convert to hours
+        utdCost = utd * hourlyRate * numOfEmployees; // assuming $75 per hour cost per employee
+    }
+}

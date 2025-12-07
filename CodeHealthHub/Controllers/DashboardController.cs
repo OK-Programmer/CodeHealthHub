@@ -78,7 +78,16 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
 
     protected async Task<List<Measure>?> GetMeasures(UriBuilder uriBuilder, string projectKey) {
         List<MeasureSearchResponse?> measureSearchResponses = [];
-        List<string> healthScoreMetrics = ["security_rating", "reliability_rating", "sqale_rating", "security_review_rating"];
+        List<string> healthScoreMetrics = 
+        [
+            "security_rating", 
+            "reliability_rating", 
+            "sqale_rating", 
+            "security_review_rating", 
+            "sqale_index", // maintainability debt
+            "reliability_remediation_effort", // reliability debt
+            "security_remediation_effort" // security debt
+        ];
 
         // TODO: extract metric keys into its own class for user customization
         uriBuilder.Path = "/api/measures/component";
@@ -172,25 +181,4 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
             return NotFound();
         }
     }
-
-    // public async Task GetQualityGates(string projectKey) {
-    //     List<UriBuilder> builders = Utility.GetInstancesURIBuilders(_dbContext);
-
-    //     //TODO: Handle multiple instances properly
-    //     foreach (UriBuilder builder in builders)
-    //     {
-    //         builder.Path = "/api/qualitygates/project_status";
-    //         builder.Query = $"projectKey={projectKey}";
-    //         Uri? url = builder.Uri;
-
-    //         HttpRequestMessage? request = new HttpRequestMessage(HttpMethod.Get, url);
-
-    //         object? response = JsonConvert.DeserializeObject(await Utility.MakeRequest(request));
-
-    //         if (response != null) 
-    //         {
-    //             Debug.WriteLine(response.ToString());
-    //         }
-    //     }
-    // }
 }
