@@ -23,28 +23,43 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         else { return Ok(projects); }
     }
 
-    // TODO: Change from single project update to update all projects weights at once    
-    [HttpPut("update/{id}")]
-    public async Task<ActionResult> UpdateProjectWeight(int id, [FromBody] double newWeight) {
-        SonarQubeProject? project = await _dbContext.SonarQubeProjects.FindAsync(id);
+    [HttpPut("update-weights")]
+    public async Task<ActionResult> UpdateProjectWeights([FromBody] Dictionary<int, double> newWeights) {
+        bool anyUpdates = false;
         
-        if (project == null) 
+        foreach(var entry in newWeights) 
         {
-            return BadRequest("Unable to find project with given ID.");
-        }
-        else 
-        {
-            if (project.Weight == newWeight) 
+            int projectId = entry.Key;
+            double newWeight = entry.Value;
+
+            SonarQubeProject? project = await _dbContext.SonarQubeProjects.FindAsync(projectId);
+            if (project == null) 
             {
-                // No change in weight
-                return Ok();
+                Debug.WriteLine($"UpdateProjectWeight(): Project with ID {projectId} not found.");
+                continue;
             }
             else 
             {
-                project.Weight = newWeight;
-                await _dbContext.SaveChangesAsync();
-                return Ok();
+                if (project.Weight == newWeight) 
+                {
+                    continue;
+                }
+                else 
+                {
+                    project.Weight = newWeight;
+                    anyUpdates = true;
+                }
             }
+        }
+
+        if (!anyUpdates) 
+        {
+            return BadRequest("No project weights were updated because project weights did not change.");
+        }
+        else
+        {
+            await _dbContext.SaveChangesAsync();
+            return Ok();
         }
     }
 

@@ -13,7 +13,16 @@
 
 <div class="row d-flex justify-content-center">
     <div class="col-8 text-end">
-        <button type="button" class="btn btn-sm btn-outline-dark ms-1" @onclick="RefreshProjects">Refresh Project Data</button>
+        @if (isEditing)
+        {
+            <button class="btn btn-success me-2" @onclick="() => SaveEdit()">Save</button>
+            <button class="btn btn-secondary me-2" @onclick="() => isEditing = false">Cancel</button>
+        }
+        else
+        {
+            <button class="btn btn-secondary me-2" @onclick="() => isEditing = true">Edit</button>
+        }
+        <button type="button" class="btn btn-outline-dark me-2" @onclick="RefreshProjects">Refresh Project Data</button>
     </div>
 </div>
 
@@ -49,15 +58,6 @@
                         }
                     </td>
                     <td>
-                        @if (isEditing)
-                        {
-                            <button class="btn btn-sm btn-success me-2" @onclick="() => SaveEdit(projects[rowIndex].Id)">Save</button>
-                            <button class="btn btn-sm btn-secondary me-2" @onclick="() => isEditing = false">Cancel</button>
-                        }
-                        else
-                        {
-                            <button class="btn btn-sm btn-secondary me-2" @onclick="() => isEditing = true">Edit</button>
-                        }
                         <button class="btn btn-sm btn-danger">Delete</button>
                     </td>
                 </tr>
@@ -67,11 +67,20 @@
     </div>
 </div>
 
-<div class="row d-flex justify-content-center">
+@* <div class="row d-flex justify-content-center">
     <div class="col-8 text-end">
+        @if (isEditing)
+        {
+            <button class="btn btn-sm btn-success me-2" @onclick="() => SaveEdit()">Save</button>
+            <button class="btn btn-sm btn-secondary me-2" @onclick="() => isEditing = false">Cancel</button>
+        }
+        else
+        {
+            <button class="btn btn-sm btn-secondary me-2" @onclick="() => isEditing = true">Edit</button>
+        }
         <button class="btn btn-sm btn-primary">Add</button> 
     </div>
-</div>
+</div> *@
 
 
 @code
@@ -123,11 +132,7 @@
         return true;
     }
 
-    /* 
-        Bug: Currently only saves one edit at a time. Need to modify to save all edits at once. 
-        TODO: Modify to save all edits at once. Move edit and save button outside the table.
-    */
-    protected async Task SaveEdit(int Id)
+    protected async Task SaveEdit()
     {
         isEditing = false;
 
@@ -138,16 +143,24 @@
         }
         else
         {
-            string saveEditsURL = $"api/projects/update/{Id}";
+            // Prepare updated weights dictionary
+            Dictionary<int, double> updatedWeights = new Dictionary<int, double>();
+            for(int i = 0; i < projects.Count; i++)
+            {
+                updatedWeights[projects[i].Id] = double.Parse(weights[i]);
+            }
+
+            // Call API to save updated weights
+            string saveEditsURL = $"api/projects/update-weights";
             HttpClient client = HttpFactory.CreateClient("LocalApi");
-            HttpResponseMessage? response = await client.PutAsJsonAsync(saveEditsURL, double.Parse(weights[Id-1])); // Id-1 to convert to 0-based index
+            HttpResponseMessage? response = await client.PutAsJsonAsync(saveEditsURL, updatedWeights); // Id-1 to convert to 0-based index
 
             if (response.IsSuccessStatusCode)
             {
                 navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
                 return;
             }
-            else 
+            else
             {
                 Debug.WriteLine("Error saving edits: " + response.ReasonPhrase);
                 await JSRuntime.InvokeVoidAsync("alert", "Error saving edits: " + response.ReasonPhrase);
