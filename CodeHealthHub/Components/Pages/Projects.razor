@@ -16,11 +16,11 @@
         @if (isEditing)
         {
             <button class="btn btn-success me-2" @onclick="() => SaveEdit()">Save</button>
-            <button class="btn btn-secondary me-2" @onclick="() => isEditing = false">Cancel</button>
+            <button class="btn btn-secondary me-2" @onclick="CancelEdit">Cancel</button>
         }
         else
         {
-            <button class="btn btn-secondary me-2" @onclick="() => isEditing = true">Edit</button>
+            <button class="btn btn-secondary me-2" @onclick="EnterEditMode">Edit</button>
         }
         <button type="button" class="btn btn-outline-dark me-2" @onclick="RefreshProjects">Refresh Project Data</button>
     </div>
@@ -34,6 +34,8 @@
                     <th>Project ID</th>
                     <th>Name</th>
                     <th>Key</th>
+                    <th>Developer Count</th>
+                    <th>Developer Cost/hr</th>
                     <th>Weight</th>
                     <th>Actions</th>
                 </tr>
@@ -43,18 +45,38 @@
                 {
                 var rowIndex = i;
                 var project = projects[rowIndex];
-                var tempWeight = weights[rowIndex];
+                var tempWeight = project.Weight.ToString("0.00");
+                var tempNumOfDevs = project.NumOfDevelopers.ToString();
+                var tempDevCost = project.DeveloperCostPerHour.ToString();
                 <tr>
                     <td>@project.Id</td>
                     <td>@project.Name</td>
                     <td>@project.Key</td>
+                    <td>
+                        @if (!isEditing) { @tempNumOfDevs }
+                        else { 
+                            <InputText 
+                            @bind-Value="tempNumOfDevs"
+                            class="form-control form-control-sm" 
+                            @oninput="e => { if (int.TryParse(e.Value?.ToString(), out int result)) { project.NumOfDevelopers = result; } }"/> 
+                        }
+                    </td>
+                    <td>
+                        @if (!isEditing) { @tempDevCost }
+                        else { 
+                            <InputText 
+                            @bind-Value="tempDevCost"
+                            class="form-control form-control-sm" 
+                            @oninput="e => { if (double.TryParse(e.Value?.ToString(), out double result)) { project.DeveloperCostPerHour = result; } }"/> 
+                        }
+                    </td>
                     <td>
                         @if (!isEditing) { @tempWeight }
                         else { 
                             <InputText 
                             @bind-Value="tempWeight"
                             class="form-control form-control-sm" 
-                            @oninput="e => { weights[rowIndex] = e.Value?.ToString() ?? string.Empty; }"/> 
+                            @oninput="e => {if (double.TryParse(e.Value?.ToString(), out double result)) { project.Weight = result; } }"/> 
                         }
                     </td>
                     <td>
@@ -67,26 +89,14 @@
     </div>
 </div>
 
-@* <div class="row d-flex justify-content-center">
-    <div class="col-8 text-end">
-        @if (isEditing)
-        {
-            <button class="btn btn-sm btn-success me-2" @onclick="() => SaveEdit()">Save</button>
-            <button class="btn btn-sm btn-secondary me-2" @onclick="() => isEditing = false">Cancel</button>
-        }
-        else
-        {
-            <button class="btn btn-sm btn-secondary me-2" @onclick="() => isEditing = true">Edit</button>
-        }
-        <button class="btn btn-sm btn-primary">Add</button> 
-    </div>
-</div> *@
-
 
 @code
 {
     List<SonarQubeProject> projects = new List<SonarQubeProject>();
-    List<string> weights = new List<string>();
+    @* List<string> weights = new List<string>(); *@
+    List<SonarQubeProject> originalProjects = new List<SonarQubeProject>();
+    @* List<string> originalWeights = new List<string>(); *@
+
     bool isEditing = false;
 
     protected override async Task OnInitializedAsync()
@@ -94,12 +104,46 @@
         string allProjectsURL = "api/projects/all";
         HttpClient client = HttpFactory.CreateClient("LocalApi");
         projects = await client.GetFromJsonAsync<List<SonarQubeProject>>(allProjectsURL) ?? new List<SonarQubeProject>();
-
-        foreach (SonarQubeProject project in projects)
+        @* foreach (SonarQubeProject project in projects)
         {
-            Debug.WriteLine($"Project: ID={project.Id}, Name={project.Name}, Key={project.Key}, Weight={project.Weight}");
             weights.Add(String.Format("{0:0.000}", project.Weight));
-        }
+        } *@
+    }
+
+    // When entering edit mode, backup the original data
+    void EnterEditMode()
+    {
+        // Deep copy projects (shallow copy is not enough if you edit properties)
+        originalProjects = projects.Select(p => new SonarQubeProject
+        {
+            Id = p.Id,
+            Name = p.Name,
+            Key = p.Key,
+            LastAnalysisDate = p.LastAnalysisDate,
+            NumOfDevelopers = p.NumOfDevelopers,
+            DeveloperCostPerHour = p.DeveloperCostPerHour,
+            Weight = p.Weight
+        }).ToList();
+
+        isEditing = true;
+    }
+
+    // When cancelling, restore the original data
+    void CancelEdit()
+    {
+        // Restore values
+        projects = originalProjects.Select(p => new SonarQubeProject
+        {
+            Id = p.Id,
+            Name = p.Name,
+            Key = p.Key,
+            LastAnalysisDate = p.LastAnalysisDate,
+            NumOfDevelopers = p.NumOfDevelopers,
+            DeveloperCostPerHour = p.DeveloperCostPerHour,
+            Weight = p.Weight
+        }).ToList();
+
+        isEditing = false;
     }
 
     protected async Task<bool> ValidateWeights()
@@ -108,19 +152,19 @@
         // Input Vdalidation for all project weights
         for(int i = 0; i < projects.Count; i++)
         {
-            if (string.IsNullOrEmpty(weights[i]))
+            if (projects[i].Weight.GetType() != typeof(double))
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Weight must be a decimal number");
+                return false;
+            }
+
+            if (projects[i].Weight.GetType() == null)
             {
                 await JSRuntime.InvokeVoidAsync("alert", "Weight cannot be empty");
                 return false;
             }
 
-            if (double.TryParse(weights[i], out _) == false)
-            {
-                await JSRuntime.InvokeVoidAsync("alert", "Weight must be a valid number");
-                return false;
-            }
-
-            totalWeight += double.Parse(weights[i]);
+            totalWeight += projects[i].Weight;
         }
 
         if (totalWeight != 1.0)
@@ -132,40 +176,137 @@
         return true;
     }
 
+    protected async Task<bool> ValidateDeveloperVariables()
+    {
+        // Input Validation for Developer Count and Cost
+        for(int i = 0; i < projects.Count; i++)
+        {
+            if (projects[i].NumOfDevelopers.GetType() != typeof(int))
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Number of Developers must be a whole number");
+                return false;
+            }
+
+            if (projects[i].NumOfDevelopers < 0)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Number of Developers cannot be negative");
+                return false;
+            }
+
+            if (projects[i].DeveloperCostPerHour.GetType() != typeof(double))
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Developer Cost per Hour must be a decimal number");
+                return false;
+            }
+
+            if (projects[i].DeveloperCostPerHour < 0.0 || projects[i].DeveloperCostPerHour > 1000.0)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Developer Cost per Hour is invalid");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     protected async Task SaveEdit()
     {
         isEditing = false;
 
-        if(await ValidateWeights() == false)
+        if(await ValidateWeights() == false || await ValidateDeveloperVariables() == false)
         {
             navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
             return;
         }
         else
         {
-            // Prepare updated weights dictionary
-            Dictionary<int, double> updatedWeights = new Dictionary<int, double>();
-            for(int i = 0; i < projects.Count; i++)
-            {
-                updatedWeights[projects[i].Id] = double.Parse(weights[i]);
-            }
+            await SaveWeights();
+            await SaveNumberOfDevs();
+            await SaveDeveloperCost();
+        }        
+    }
 
-            // Call API to save updated weights
-            string saveEditsURL = $"api/projects/update-weights";
-            HttpClient client = HttpFactory.CreateClient("LocalApi");
-            HttpResponseMessage? response = await client.PutAsJsonAsync(saveEditsURL, updatedWeights); // Id-1 to convert to 0-based index
+    protected async Task SaveWeights()
+    {
+        // Prepare updated weights dictionary
+        Dictionary<int, double> updatedWeights = new Dictionary<int, double>();
+        for(int i = 0; i < projects.Count; i++)
+        {
+            updatedWeights[projects[i].Id] = projects[i].Weight;
+        }
 
-            if (response.IsSuccessStatusCode)
-            {
-                navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
-                return;
-            }
-            else
-            {
-                Debug.WriteLine("Error saving edits: " + response.ReasonPhrase);
-                await JSRuntime.InvokeVoidAsync("alert", "Error saving edits: " + response.ReasonPhrase);
-                return;
-            }
+        // Call API to save updated weights
+        string saveEditsURL = $"api/projects/update-weights";
+        HttpClient client = HttpFactory.CreateClient("LocalApi");
+        HttpResponseMessage? response = await client.PutAsJsonAsync(saveEditsURL, updatedWeights); // Id-1 to convert to 0-based index
+
+        if (response.IsSuccessStatusCode)
+        {
+            navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
+            return;
+        }
+        else
+        {
+            Debug.WriteLine("Error saving edits: " + response.ReasonPhrase);
+            await JSRuntime.InvokeVoidAsync("alert", "Error saving edits: " + response.ReasonPhrase);
+            navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
+            return;
+        }
+    }
+
+    protected async Task SaveNumberOfDevs()
+    {
+        // Prepare updated dev count dictionary
+        Dictionary<int, int> updatedDevCount = new Dictionary<int, int>();
+        for(int i = 0; i < projects.Count; i++)
+        {
+            updatedDevCount[projects[i].Id] = projects[i].NumOfDevelopers;
+        }
+
+        // Call API to save updated developer variables
+        string saveDevsURL = $"api/projects/update-developer-count";
+        HttpClient client = HttpFactory.CreateClient("LocalApi");
+        HttpResponseMessage? response = await client.PutAsJsonAsync(saveDevsURL, updatedDevCount);
+
+        if (response.IsSuccessStatusCode)
+        {
+            navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
+            return;
+        }
+        else
+        {
+            Debug.WriteLine("Error saving number of devs: " + response.ReasonPhrase);
+            await JSRuntime.InvokeVoidAsync("alert", "Error saving number of devs: " + response.ReasonPhrase);
+            navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
+            return;
+        }
+    }
+
+    protected async Task SaveDeveloperCost()
+    {
+        // Prepare updated dev cost dictionary
+        Dictionary<int, double> updatedDevCost = new Dictionary<int, double>();
+        for(int i = 0; i < projects.Count; i++)
+        {
+            updatedDevCost[projects[i].Id] = projects[i].DeveloperCostPerHour;
+        }
+
+        // Call API to save updated developer variables
+        string saveCostURL = $"api/projects/update-developer-cost";
+        HttpClient client = HttpFactory.CreateClient("LocalApi");
+        HttpResponseMessage? response = await client.PutAsJsonAsync(saveCostURL, updatedDevCost);
+
+        if (response.IsSuccessStatusCode)
+        {
+            navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
+            return;
+        }
+        else
+        {
+            Debug.WriteLine("Error saving developer cost: " + response.ReasonPhrase);
+            await JSRuntime.InvokeVoidAsync("alert", "Error saving developer cost: " + response.ReasonPhrase);
+            navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
+            return;
         }
     }
 

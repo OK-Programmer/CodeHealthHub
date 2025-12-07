@@ -32,7 +32,7 @@
     </div>
     <div class="col">
         <div class="card">
-            <TechDebtCard measures=@measures></TechDebtCard>
+            <TechDebtCard measureComponents=@measureComponents projects=@projects></TechDebtCard>
         </div>
     </div>
     <div class="col">
@@ -70,7 +70,7 @@
     private List<SonarQubeProject>? projects = new List<SonarQubeProject>();
     private IssueSearchResponse? issueSearchResponse = new IssueSearchResponse();
     private List<Issue> issues = new List<Issue>();
-    private List<Measure> measures = new List<Measure>();
+    private List<MeasureSearchResponseComponent> measureComponents = new List<MeasureSearchResponseComponent>();
     private int? issuesCount, effortTotal;
     private string? overallHealthScore;
 
@@ -149,12 +149,13 @@
         Debug.WriteLine($"Calling URL: {httpClient.BaseAddress}{requestUri}");
         try 
         {
-            List<List<Measure>>? measuresResponse = await httpClient.GetFromJsonAsync<List<List<Measure>>>(requestUri);
+            List<MeasureSearchResponseComponent>? measuresResponse = await httpClient.GetFromJsonAsync<List<MeasureSearchResponseComponent>>(requestUri);
             if (measuresResponse != null)
             {
-                foreach(List<Measure> measureList in measuresResponse)
+                measureComponents.AddRange(measuresResponse);
+                foreach(MeasureSearchResponseComponent measureComponent in measuresResponse)
                 {
-                    measures.AddRange(measureList);
+                    List<Measure> measureList = measureComponent.measures;
                     ProjectHealthScore phs = new ProjectHealthScore(){
                         Vulnerability = (int)float.Parse(measureList.Find(m => m.metric == "security_rating")?.value ?? "0.0"),
                         Bugs = (int)float.Parse(measureList.Find(m => m.metric == "reliability_rating")?.value ?? "0.0"),

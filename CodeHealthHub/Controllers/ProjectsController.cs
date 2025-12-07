@@ -25,8 +25,11 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
 
     [HttpPut("update-weights")]
     public async Task<ActionResult> UpdateProjectWeights([FromBody] Dictionary<int, double> newWeights) {
-        bool anyUpdates = false;
-        
+        if (!ValidateWeightUpdate(newWeights)) {
+            Debug.WriteLine("UpdateProjectWeights(): Invalid weight update parameter.");
+            return BadRequest("UpdateProjectWeights(): Invalid weight update parameter.");
+        }
+
         foreach(var entry in newWeights) 
         {
             int projectId = entry.Key;
@@ -47,20 +50,82 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
                 else 
                 {
                     project.Weight = newWeight;
-                    anyUpdates = true;
                 }
             }
         }
 
-        if (!anyUpdates) 
-        {
-            return BadRequest("No project weights were updated because project weights did not change.");
+        await _dbContext.SaveChangesAsync();
+        return Ok();
+    }
+
+    [HttpPut("update-developer-count")]
+    public async Task<ActionResult> UpdateDeveloperCount([FromBody] Dictionary<int, int> newDevCounts) {
+        if (!ValidateDevCountUpdate(newDevCounts)) {
+            Debug.WriteLine("UpdateDeveloperCount(): Invalid developer count update parameter.");
+            return BadRequest("UpdateDeveloperCount(): Invalid developer count update parameter.");
         }
-        else
+        
+        foreach(var entry in newDevCounts) 
         {
-            await _dbContext.SaveChangesAsync();
-            return Ok();
+            int projectId = entry.Key;
+            int newDevCount = entry.Value;
+
+            SonarQubeProject? project = await _dbContext.SonarQubeProjects.FindAsync(projectId);
+            if (project == null) 
+            {
+                Debug.WriteLine($"UpdateDeveloperCount(): Project with ID {projectId} not found.");
+                continue;
+            }
+            else 
+            {
+                if (project.NumOfDevelopers == newDevCount) 
+                {
+                    continue;
+                }
+                else 
+                {
+                    project.NumOfDevelopers = newDevCount;
+                }
+            }
         }
+
+        await _dbContext.SaveChangesAsync();
+        return Ok();
+    }
+
+    [HttpPut("update-developer-cost")]
+    public async Task<ActionResult> UpdateDeveloperCost([FromBody] Dictionary<int, double> newDevCosts) {
+        if (!ValidateDevCostUpdate(newDevCosts)) {
+            Debug.WriteLine("UpdateDeveloperCost(): Invalid developer cost update parameter.");
+            return BadRequest("UpdateDeveloperCost(): Invalid developer cost update parameter.");
+        }
+        
+        foreach(var entry in newDevCosts) 
+        {
+            int projectId = entry.Key;
+            double newDevCost = entry.Value;
+
+            SonarQubeProject? project = await _dbContext.SonarQubeProjects.FindAsync(projectId);
+            if (project == null) 
+            {
+                Debug.WriteLine($"UpdateDeveloperCost(): Project with ID {projectId} not found.");
+                continue;
+            }
+            else 
+            {
+                if (project.DeveloperCostPerHour == newDevCost) 
+                {
+                    continue;
+                }
+                else 
+                {
+                    project.DeveloperCostPerHour = newDevCost;
+                }
+            }
+        }
+
+        await _dbContext.SaveChangesAsync();
+        return Ok();
     }
 
     [HttpGet("refresh")]
@@ -125,5 +190,37 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         }
 
         _dbContext.SaveChanges();
+    }
+
+    protected bool ValidateWeightUpdate(Dictionary<int, double> newWeights) {
+        double totalWeight = 0.0;
+        foreach(var entry in newWeights) 
+        {
+            totalWeight += entry.Value;
+        }
+        // Check if total weight is approximately 1.0 (allowing for floating point precision issues)
+        return Math.Abs(totalWeight - 1.0) < 0.0001;
+    }
+
+    protected bool ValidateDevCountUpdate(Dictionary<int, int> newDevCounts) {
+        foreach(var entry in newDevCounts) 
+        {
+            if (entry.Value < 0) 
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    protected bool ValidateDevCostUpdate(Dictionary<int, double> newDevCosts) {
+        foreach(var entry in newDevCosts) 
+        {
+            if (entry.Value < 0.0) 
+            {
+                return false;
+            }
+        }
+        return true;
     }
 }

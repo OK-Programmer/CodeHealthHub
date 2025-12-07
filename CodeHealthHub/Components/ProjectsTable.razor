@@ -1,23 +1,17 @@
 ﻿@using CodeHealthHub.Models
 
-<div class="d-flex justify-content-right p-2">
+<div class="p-2">
     @if(showProjectsTable)
     {
-        <button type="button" class="btn btn-sm btn-outline-dark" @onclick="ToggleProjectsTable">Hide Projects</button>
+        <button type="button" class="btn btn-sm btn-outline-dark w-100" @onclick="ToggleProjectsTable">Hide Projects</button>
     }
     else
     {
-        <button type="button" class="btn btn-sm btn-outline-dark" @onclick="ToggleProjectsTable">Show Projects</button>
+        <button type="button" class="btn btn-sm btn-outline-dark w-100" @onclick="ToggleProjectsTable">Show Projects</button>
     }
 </div>
 
-@if (!showProjectsTable)
-{
-    <div class="card-body">
-        Table of projects is hidden
-    </div>
-}
-else
+@if (showProjectsTable)
 {
     <div class="table-responsive p-3">
         <table class="table">

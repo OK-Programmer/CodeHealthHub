@@ -41,19 +41,19 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
     }
 
     [HttpGet("measures")]
-    public async Task<ActionResult<List<List<Measure>>>> GetAllMeasures() {
+    public async Task<ActionResult> GetAllMeasures() {
         // Get URI builders for all SonarQube instances
         List<UriBuilder> builders = Utility.GetInstancesURIBuilders(_dbContext);
         // Fetch all project keys from the database
         List<string> projectKeys = _dbContext.SonarQubeProjects.Select(p => p.Key).ToList();
-        List<List<Measure>> listOfMeasures = [];
+        List<MeasureSearchResponseComponent> listOfMeasures = [];
 
         // for each SonarQube instance, and for each project in the instance, fetch measures
         foreach(UriBuilder builder in builders) {
             builder.Path = "/api/measures/component";
             foreach(string key in projectKeys) {
                 // for each project key, fetch measures
-                List<Measure>? measures = await GetMeasures(builder, key);
+                MeasureSearchResponseComponent? measures = await GetMeasures(builder, key);
                 if (measures == null) 
                 { 
                     Debug.WriteLine($"GetAllMeasures(): No measures found for project {key}"); 
@@ -61,7 +61,7 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
                 }
                 else
                 { 
-                    listOfMeasures.Add(measures); 
+                    listOfMeasures.AddRange(measures); 
                 }
             }
         }
@@ -76,8 +76,8 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
         }
     }
 
-    protected async Task<List<Measure>?> GetMeasures(UriBuilder uriBuilder, string projectKey) {
-        List<MeasureSearchResponse?> measureSearchResponses = [];
+    protected async Task<MeasureSearchResponseComponent?> GetMeasures(UriBuilder uriBuilder, string projectKey) {
+        MeasureSearchResponseComponent measureComponent = new();
         List<string> healthScoreMetrics = 
         [
             "security_rating", 
@@ -89,7 +89,6 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
             "security_remediation_effort" // security debt
         ];
 
-        // TODO: extract metric keys into its own class for user customization
         uriBuilder.Path = "/api/measures/component";
         uriBuilder.Query = $"metricKeys={string.Join(",",healthScoreMetrics.ToArray())}&component={projectKey}";
         Uri? uri = uriBuilder.Uri;
@@ -102,28 +101,20 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
             Debug.WriteLine("GetMeasures(): Null response from request");
             return null; 
         }
-        else 
+        else
         { 
-            measureSearchResponses.AddRange(JsonConvert.DeserializeObject<MeasureSearchResponse>(response));
+            measureComponent = JsonConvert.DeserializeObject<MeasureSearchResponse>(response)!.component;
         }
 
         // Combine measures from API response into a single list
-        if (measureSearchResponses == null)
+        if (measureComponent == null)
         {
             Debug.WriteLine("GetMeasures(): No measures found in response");
             return null;
         }
         else
         {
-            List<Measure> measures = [];
-            foreach (MeasureSearchResponse? measureResponse in measureSearchResponses)
-            {
-                if (measureResponse != null && measureResponse.component.measures != null)
-                {
-                    measures.AddRange(measureResponse.component.measures);
-                }
-            }
-            return measures;
+            return measureComponent;
         }
     }
 
