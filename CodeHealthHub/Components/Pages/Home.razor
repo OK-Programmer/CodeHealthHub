@@ -13,21 +13,12 @@
 <div class="row mb-4">
     <div class="col">
         <div class="card">
-            <div class="card-body">
-                <h4 class="card-title">Overall Health Score</h4>
-                <p class="card-text health-score" health-score="@overallHealthScore">@overallHealthScore</p>
-            </div>
+            <HealthScoreCard measureComponents=@measureComponents weights=@projectWeights></HealthScoreCard>
         </div>
     </div>
     <div class="col">
         <div class="card">
-            <div class="card-body">
-                <h4 class="card-title">Issues</h4>
-                <p class="card-text">
-                    Total Issue Count: @issuesCount <br />
-                    Total Effort: @effortTotal mins
-                </p>
-            </div>
+            <IssuesCard issuesCount=@issuesCount effortTotal=@effortTotal></IssuesCard>
         </div>
     </div>
     <div class="col">
@@ -70,17 +61,9 @@
     private List<SonarQubeProject>? projects = new List<SonarQubeProject>();
     private IssueSearchResponse? issueSearchResponse = new IssueSearchResponse();
     private List<Issue> issues = new List<Issue>();
+    private List<double> projectWeights = new List<double>();
     private List<MeasureSearchResponseComponent> measureComponents = new List<MeasureSearchResponseComponent>();
     private int? issuesCount, effortTotal;
-    private string? overallHealthScore;
-
-    public struct ProjectHealthScore
-    {
-        public int Vulnerability;
-        public int Bugs;
-        public int CodeSmells;
-        public int SecHotspots;
-    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -106,11 +89,8 @@
             projects = await httpClient.GetFromJsonAsync<List<SonarQubeProject>>(requestUri);
             if (projects != null)
             {
+                projectWeights = (from project in projects select project.Weight).ToList();
                 StateHasChanged();
-                foreach(SonarQubeProject project in projects)
-                {
-                    Debug.WriteLine(project.Name);
-                }
             }
         }
         catch (Exception)
@@ -143,7 +123,6 @@
 
     protected async Task GetMeasures()
     {
-        List<ProjectHealthScore>? allProjectHealthScores = new List<ProjectHealthScore>();
         string? requestUri = "api/dashboard/measures";
         HttpClient httpClient = HttpFactory.CreateClient("LocalApi");
         Debug.WriteLine($"Calling URL: {httpClient.BaseAddress}{requestUri}");
@@ -153,7 +132,7 @@
             if (measuresResponse != null)
             {
                 measureComponents.AddRange(measuresResponse);
-                foreach(MeasureSearchResponseComponent measureComponent in measuresResponse)
+                @* foreach(MeasureSearchResponseComponent measureComponent in measuresResponse)
                 {
                     List<Measure> measureList = measureComponent.measures;
                     ProjectHealthScore phs = new ProjectHealthScore(){
@@ -164,62 +143,13 @@
                     };
                     allProjectHealthScores.Add(phs);
                 }
-                CalculateOverallHealthScore(allProjectHealthScores);
-                StateHasChanged();
+                CalculateOverallHealthScore(allProjectHealthScores); *@
+                StateHasChanged(); 
             }
         }
         catch (Exception)
         {
             throw;
         }
-    }
-
-    protected void CalculateOverallHealthScore(List<ProjectHealthScore> allProjectHealthScores)
-    {
-        List<double> listOfAvgPHS = new List<double>();
-        List<double> weights = (from project in projects select project.Weight).ToList();
-        // for each project, sum up the health scores
-        for(int i = 0; i < allProjectHealthScores.Count; i++)
-        {
-            ProjectHealthScore phs = allProjectHealthScores[i];
-            double avgPHS = Math.Ceiling((double)
-                (
-                    phs.Vulnerability + 
-                    phs.Bugs + 
-                    phs.CodeSmells + 
-                    phs.SecHotspots
-                ) / 4);
-            listOfAvgPHS.Add(avgPHS);
-        }
-        double sum = listOfAvgPHS.Zip(weights, (w, PHS) => w * PHS).Sum();
-        double ohs = Math.Ceiling((1.0/(double)allProjectHealthScores.Count) * sum); // overall health score
-        TranslateHealthScore(ohs);
-    }
-
-    protected void TranslateHealthScore(double score)
-    {
-        string grade = "";
-        switch(score)
-        {
-            case 5.0f:
-                grade = "E";
-                break;
-            case 4.0f:
-                grade = "D";
-                break;
-            case 3.0f:
-                grade = "C";
-                break;
-            case 2.0f:
-                grade = "B";
-                break;
-            case 1.0f:
-                grade = "A";
-                break;
-            default:
-                grade = "N/A";
-                break;
-        }
-        overallHealthScore = grade;
     }
 }

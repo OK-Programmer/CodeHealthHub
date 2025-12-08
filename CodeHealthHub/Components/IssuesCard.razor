@@ -1,0 +1,16 @@
+﻿@using CodeHealthHub.Models
+
+<div class="card-body">
+    <h4 class="card-title">Issues</h4>
+    <p class="card-text">
+        Total Issue Count: @issuesCount <br />
+        Total Effort: @effortTotal mins
+    </p>
+</div>
+
+@code {
+    [Parameter]
+    public int? issuesCount { get; set; }
+    [Parameter]
+    public int? effortTotal { get; set; }
+}
