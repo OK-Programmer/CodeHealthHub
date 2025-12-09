@@ -5,25 +5,28 @@
 @inject IHttpClientFactory HttpFactory
 @inject NavigationManager navigationManager
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Dashboard</PageTitle>
 
-<h1>Dashboard</h1>
+<div class="header-container">
+    <h1>Dashboard</h1>
+    <hr />
+</div>
 
 <!-- Summary Cards -->
 <div class="row mb-4">
     <div class="col">
         <div class="card">
-            <HealthScoreCard measureComponents=@measureComponents weights=@projectWeights></HealthScoreCard>
+            <HealthScoreCard allProjMeasures=@measureComponents weights=@projectWeights></HealthScoreCard>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card">
+            <TechDebtCard allProjMeasures=@measureComponents projects=@projects></TechDebtCard>
         </div>
     </div>
     <div class="col">
         <div class="card">
             <IssuesCard issuesCount=@issuesCount effortTotal=@effortTotal></IssuesCard>
-        </div>
-    </div>
-    <div class="col">
-        <div class="card">
-            <TechDebtCard measureComponents=@measureComponents projects=@projects></TechDebtCard>
         </div>
     </div>
     <div class="col">
@@ -47,7 +50,7 @@
 <div class="row mb-4">
     <div class="col">
         <div class="card">
-            <TestBarChart Issues=@issues></TestBarChart>
+            <TestBarChart projects=@projects Issues=@issues></TestBarChart>
         </div>
     </div>
     <div class="col">
@@ -62,7 +65,7 @@
     private IssueSearchResponse? issueSearchResponse = new IssueSearchResponse();
     private List<Issue> issues = new List<Issue>();
     private List<double> projectWeights = new List<double>();
-    private List<MeasureSearchResponseComponent> measureComponents = new List<MeasureSearchResponseComponent>();
+    private List<ProjectMeasures> measureComponents = new List<ProjectMeasures>();
     private int? issuesCount, effortTotal;
 
     protected override async Task OnInitializedAsync()
@@ -128,22 +131,10 @@
         Debug.WriteLine($"Calling URL: {httpClient.BaseAddress}{requestUri}");
         try 
         {
-            List<MeasureSearchResponseComponent>? measuresResponse = await httpClient.GetFromJsonAsync<List<MeasureSearchResponseComponent>>(requestUri);
+            List<ProjectMeasures>? measuresResponse = await httpClient.GetFromJsonAsync<List<ProjectMeasures>>(requestUri);
             if (measuresResponse != null)
             {
                 measureComponents.AddRange(measuresResponse);
-                @* foreach(MeasureSearchResponseComponent measureComponent in measuresResponse)
-                {
-                    List<Measure> measureList = measureComponent.measures;
-                    ProjectHealthScore phs = new ProjectHealthScore(){
-                        Vulnerability = (int)float.Parse(measureList.Find(m => m.metric == "security_rating")?.value ?? "0.0"),
-                        Bugs = (int)float.Parse(measureList.Find(m => m.metric == "reliability_rating")?.value ?? "0.0"),
-                        CodeSmells = (int)float.Parse(measureList.Find(m => m.metric == "sqale_rating")?.value ?? "0.0"),
-                        SecHotspots = (int)float.Parse(measureList.Find(m => m.metric == "security_review_rating")?.value ?? "0.0"),
-                    };
-                    allProjectHealthScores.Add(phs);
-                }
-                CalculateOverallHealthScore(allProjectHealthScores); *@
                 StateHasChanged(); 
             }
         }

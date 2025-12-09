@@ -4,5 +4,5 @@ namespace CodeHealthHub.Models;
 
 public class MeasureSearchResponse
 {
-    public required MeasureSearchResponseComponent component { get; set; }
+    public required ProjectMeasures Component { get; set; }
 }

@@ -1,3 +1,4 @@
+@using CodeHealthHub.Components.Pages
 @using CodeHealthHub.Models
 
 <div class="chart-container">
@@ -9,6 +10,8 @@
     public List<SonarQubeProject>? Projects { get; set; } *@
     [Parameter]
     public List<Issue>? Issues { get; set; }
+    [Parameter]
+    public List<SonarQubeProject>? projects { get; set; }
     private List<Issue>? previousIssues = null;
     private BarChart barChart = default!;
     private BarChartOptions barChartOptions = default!;
@@ -24,7 +27,7 @@
         barChartOptions.IndexAxis = "y";
 
         barChartOptions.Scales.X!.Title = new ChartAxesTitle { Text = "Number of Issues", Display = true };
-        barChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = "Proejct", Display = true };
+        barChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = "Project", Display = true };
 
         barChartOptions.Plugins.Legend.Display = false;
     }
@@ -38,7 +41,8 @@
             
             if (Issues != null && Issues.Any())
             {
-                var labels = Issues.Select(i => i.project).Distinct().ToList();
+                var labels = GetLabels() ?? new List<string>();
+                @* var labels = Issues.Select(i => i.project).Distinct().ToList(); *@
                 var datasets = new List<IChartDataset>();
 
                 var dataset1 = new BarChartDataset()
@@ -79,17 +83,41 @@
         List<double?> dataPoints = new();
         if (Issues != null && Issues.Any())
         {
-            var labels = Issues.Select(i => i.project).Distinct().ToList();
+            var labels = GetLabels()?? new List<string>();
+            foreach(var label in labels)
+            {
+                var count = Issues.Count(i => 
+                    {
+                        var project = projects?.FirstOrDefault(p => p.Name == label);
+                        return project != null && i.project == project.Key;
+                    });
+                dataPoints.Add(count);
+            }
+            @* var labels = Issues.Select(i => i.project).Distinct().ToList();
             foreach(var label in labels)
             {
                 var count = Issues.Count(i => i.project == label);
                 dataPoints.Add(count);
-            }
+            } *@
             return dataPoints;
         }
         else 
         { 
             return new List<double?>();
+        }
+    }
+
+    protected List<string>? GetLabels()
+    {
+        if (Issues != null && Issues.Any())
+        {
+            var projectKeys = (from issue in Issues select issue.project).Distinct().ToList();
+            var projectNames = projects?.Where(p => projectKeys.Contains(p.Key)).Select(p => p.Name).ToList();
+            return projectNames;
+        }
+        else 
+        { 
+            return new List<string>(); 
         }
     }
 }

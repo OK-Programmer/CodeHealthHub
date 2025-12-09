@@ -5,45 +5,47 @@
 
 <PageTitle>Instances Management</PageTitle>
 
-<h1>Manage SonarQube Instances</h1>
-
-<p>This is the SonarQube instances management page. Here you can add, edit or remove instances. You can also fetch projects from instances and choose which projects to be included.</p>
+<div class="mb-4">
+    <h1>Manage SonarQube Instances</h1>
+    <p>This is the SonarQube instances management page. Here you can add, edit or remove instances. You can also fetch projects from instances and choose which projects to be included.</p>
+    <hr />
+</div>
 
 <div class="row d-flex justify-content-center">
     <div class="col-8">
-        <table class="table w-100">
-            <thead>
-                <tr>
-                    <th>Instance ID</th>
-                    <th>Name</th>
-                    <th>URL</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach(var instance in instances)
-                {
-                <tr>
-                    <td>@instance.Id</td>
-                    <td>@instance.Name</td>
-                    <td>@URLs.ElementAt(instance.Id-1)</td>
-                    <td>
-                        <button class="btn btn-sm btn-secondary">Edit</button>
-                        <button class="btn btn-sm btn-danger">Delete</button>
-                    </td>
-                </tr>
-                }
-            </tbody>
-        </table>
+        <div class="card">
+            <div class="card-body">
+                <table class="table w-100">
+                    <thead>
+                        <tr>
+                            <th>Instance ID</th>
+                            <th>Name</th>
+                            <th>URL</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var instance in instances)
+                        {
+                        <tr>
+                            <td>@instance.Id</td>
+                            <td>@instance.Name</td>
+                            <td>@URLs.ElementAt(instance.Id-1)</td>
+                            <td>
+                                <button class="btn btn-sm btn-secondary">Edit</button>
+                                <button class="btn btn-sm btn-danger">Delete</button>
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+                <div class="col text-end">
+                    <button class="btn btn-primary px-4">Add</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-
-<div class="row d-flex justify-content-center">
-    <div class="col-8 text-end">
-        <button class="btn btn-primary px-4">Add</button> 
-    </div>
-</div>
-
 
 @code
 {

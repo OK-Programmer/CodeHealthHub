@@ -1,42 +1,16 @@
+.header-container {
+    margin-bottom: 20px;
+}
+
 .card {
     border: 1px solid rgba(0, 0, 0, 0.25);
     box-shadow: 2px 2px 5px gray;
 }
 
+::deep .card-text {
+    font-size: 1.25em;
+}
+
 ::deep .card-body p, ::deep .card-body h4 {
     text-align: center;
-}
-
-.health-score {
-    -webkit-text-stroke: 2px black;
-}
-
-p[health-score="A"] {
-    color: #4CAF50; /* Green */
-    font-size: 2.5rem;
-    font-weight: bold;
-}
-
-p[health-score="B"] {
-    color: #d5ff1c; /* Yellow */
-    font-size: 2.5rem;
-    font-weight: bold;
-}
-
-p[health-score="C"] {
-    color: #ff9800; /* Orange */
-    font-size: 2.5rem;
-    font-weight: bold;
-}
-
-p[health-score="D"] {
-    color: #f44336; /* Red */
-    font-size: 2.5rem;
-    font-weight: bold;
-}
-
-p[health-score="E"] {
-    color: #790000; /* Dark Red */
-    font-size: 2.5rem;
-    font-weight: bold;
 }

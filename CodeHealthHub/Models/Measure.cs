@@ -4,7 +4,7 @@ namespace CodeHealthHub.Models;
 
 public class Measure
 {
-    public string metric { get; set; }
+    public required string Metric { get; set; }
 
-    public string value { get; set; }
+    public required string Value { get; set; }
 }

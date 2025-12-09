@@ -4,13 +4,13 @@
     <h4 class="card-title">Tech Debt</h4>
     <p class="card-text">
         Unified Tech Debt: @utd.ToString("0.0") hrs<br />
-        Unified Tech Debt Cost: $@utdCost
+        Unified Tech Debt Cost: $@utdCost.ToString("0.00")
     </p>
 </div>
 
 @code {
     [Parameter]
-    public List<MeasureSearchResponseComponent> measureComponents { get; set; } = new List<MeasureSearchResponseComponent>();
+    public List<ProjectMeasures> allProjMeasures { get; set; } = new List<ProjectMeasures>();
     [Parameter]
     public List<SonarQubeProject> projects { get; set; } = new List<SonarQubeProject>();
     private double utd = 0.0;
@@ -18,18 +18,22 @@
 
     protected override void OnParametersSet()
     {
-        foreach(MeasureSearchResponseComponent measureComponent in measureComponents) // essentially per project
+        double tempUTD = 0.0;
+        double tempUTDCost = 0.0;
+        foreach(ProjectMeasures projMeasures in allProjMeasures) // essentially per project
         {
-            utd += UTD(measureComponent);
-            utdCost += UTDCost(utd, measureComponent.key);
+            tempUTD += UTD(projMeasures);
+            tempUTDCost += UTDCost(utd, projMeasures.Key?? "");
         }
+        utd = tempUTD;
+        utdCost = tempUTDCost;
     }
 
-    protected double UTD(MeasureSearchResponseComponent measureComponent)
+    protected double UTD(ProjectMeasures projMeasures)
     {
         double totalDebtMinutes = 0.0;
 
-        foreach (Measure measure in measureComponent.measures)
+        foreach (Measure measure in projMeasures.Measures?? new List<Measure>())
         {
             if (measure.metric == "sqale_index" || 
                 measure.metric == "reliability_remediation_effort" || 
@@ -56,7 +60,7 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error calculating UTD Cost: {ex.Message}");
-            return -0.0;
+            return 0.0;
         }
     }
 }

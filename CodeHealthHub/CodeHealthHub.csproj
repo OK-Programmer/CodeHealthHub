@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="BlazorExpress.ChartJS" Version="*" />
+    <PackageReference Include="BootstrapIcons.AspNetCore" Version="1.13.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid.EntityFrameworkAdapter" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.0" />

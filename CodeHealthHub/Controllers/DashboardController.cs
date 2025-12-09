@@ -46,14 +46,14 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
         List<UriBuilder> builders = Utility.GetInstancesURIBuilders(_dbContext);
         // Fetch all project keys from the database
         List<string> projectKeys = _dbContext.SonarQubeProjects.Select(p => p.Key).ToList();
-        List<MeasureSearchResponseComponent> listOfMeasures = [];
+        List<ProjectMeasures> listOfMeasures = [];
 
         // for each SonarQube instance, and for each project in the instance, fetch measures
         foreach(UriBuilder builder in builders) {
             builder.Path = "/api/measures/component";
             foreach(string key in projectKeys) {
                 // for each project key, fetch measures
-                MeasureSearchResponseComponent? measures = await GetMeasures(builder, key);
+                ProjectMeasures? measures = await GetMeasures(builder, key);
                 if (measures == null) 
                 { 
                     Debug.WriteLine($"GetAllMeasures(): No measures found for project {key}"); 
@@ -76,8 +76,7 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
         }
     }
 
-    protected async Task<MeasureSearchResponseComponent?> GetMeasures(UriBuilder uriBuilder, string projectKey) {
-        MeasureSearchResponseComponent measureComponent = new();
+    protected async Task<ProjectMeasures?> GetMeasures(UriBuilder uriBuilder, string projectKey) {
         List<string> healthScoreMetrics = 
         [
             "security_rating", 
@@ -92,17 +91,18 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
         uriBuilder.Path = "/api/measures/component";
         uriBuilder.Query = $"metricKeys={string.Join(",",healthScoreMetrics.ToArray())}&component={projectKey}";
         Uri? uri = uriBuilder.Uri;
-        Debug.WriteLine($"Fetching measures for project {projectKey} from {uri}");
 
         HttpRequestMessage? request = new(HttpMethod.Get, uri);
         string? response = await Utility.MakeRequest(request);
+        
+        ProjectMeasures measureComponent;
         if (response == null)
         {
             Debug.WriteLine("GetMeasures(): Null response from request");
-            return null; 
+            return null;
         }
         else
-        { 
+        {
             measureComponent = JsonConvert.DeserializeObject<MeasureSearchResponse>(response)!.component;
         }
 

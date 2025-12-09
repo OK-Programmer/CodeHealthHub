@@ -7,7 +7,7 @@
 
 @code {
     [Parameter]
-    public List<MeasureSearchResponseComponent> measureComponents { get; set; } = new List<MeasureSearchResponseComponent>();
+    public List<ProjectMeasures> allProjMeasures { get; set; } = new List<ProjectMeasures>();
     [Parameter]
     public List<double> weights { get; set; } = new List<double>();
     private string? overallHealthScore;
@@ -24,9 +24,9 @@
     {
         List<ProjectHealthScore>? allProjectHealthScores = new List<ProjectHealthScore>();
 
-        foreach(MeasureSearchResponseComponent measureComponent in measureComponents)
+        foreach(ProjectMeasures projMeasures in allProjMeasures)
         {
-            List<Measure> measureList = measureComponent.measures;
+            List<Measure> measureList = projMeasures.Measures;
             ProjectHealthScore phs = new ProjectHealthScore(){
                 Vulnerability = (int)float.Parse(measureList.Find(m => m.metric == "security_rating")?.value ?? "0.0"),
                 Bugs = (int)float.Parse(measureList.Find(m => m.metric == "reliability_rating")?.value ?? "0.0"),
@@ -37,6 +37,7 @@
         }
 
         overallHealthScore = CalculateOverallHealthScore(allProjectHealthScores);
+        StateHasChanged();
     }
 
     protected string CalculateOverallHealthScore(List<ProjectHealthScore> allProjectHealthScores)
