@@ -16,12 +16,12 @@
 <div class="row mb-4">
     <div class="col">
         <div class="card">
-            <HealthScoreCard allProjMeasures=@measureComponents weights=@projectWeights></HealthScoreCard>
+            <HealthScoreCard allProjMeasures=@projMeasuresList weights=@projectWeights></HealthScoreCard>
         </div>
     </div>
     <div class="col">
         <div class="card">
-            <TechDebtCard allProjMeasures=@measureComponents projects=@projects></TechDebtCard>
+            <TechDebtCard allProjMeasures=@projMeasuresList projects=@projects></TechDebtCard>
         </div>
     </div>
     <div class="col">
@@ -62,10 +62,9 @@
 
 @code {
     private List<SonarQubeProject>? projects = new List<SonarQubeProject>();
-    private IssueSearchResponse? issueSearchResponse = new IssueSearchResponse();
     private List<Issue> issues = new List<Issue>();
     private List<double> projectWeights = new List<double>();
-    private List<ProjectMeasures> measureComponents = new List<ProjectMeasures>();
+    private List<ProjectMeasures> projMeasuresList = new List<ProjectMeasures>();
     private int? issuesCount, effortTotal;
 
     protected override async Task OnInitializedAsync()
@@ -104,6 +103,7 @@
 
     protected async Task GetIssues()
     {
+        IssueSearchResponse? issueSearchResponse;
         try 
         {
             var requestUri = "api/dashboard/issues";
@@ -112,9 +112,9 @@
             issueSearchResponse = await httpClient.GetFromJsonAsync<IssueSearchResponse>(requestUri);
             if (issueSearchResponse != null)
             {
-                issuesCount = issueSearchResponse.total;
-                effortTotal = issueSearchResponse.effortTotal;
-                issues = issueSearchResponse.issues;
+                issuesCount = issueSearchResponse.Total;
+                effortTotal = issueSearchResponse.EffortTotal;
+                issues = issueSearchResponse.Issues;
                 StateHasChanged();
             }
         }
@@ -131,11 +131,19 @@
         Debug.WriteLine($"Calling URL: {httpClient.BaseAddress}{requestUri}");
         try 
         {
-            List<ProjectMeasures>? measuresResponse = await httpClient.GetFromJsonAsync<List<ProjectMeasures>>(requestUri);
-            if (measuresResponse != null)
+            var response = await httpClient.GetAsync(requestUri);
+            if (response.IsSuccessStatusCode)
             {
-                measureComponents.AddRange(measuresResponse);
-                StateHasChanged(); 
+                List<ProjectMeasures>? measuresResponse = await response.Content.ReadFromJsonAsync<List<ProjectMeasures>>();
+                if (measuresResponse != null)
+                {
+                    projMeasuresList.AddRange(measuresResponse);
+                    StateHasChanged(); 
+                }
+            }
+            else
+            {
+                Debug.WriteLine($"Error fetching measures: {response.ReasonPhrase}");
             }
         }
         catch (Exception)

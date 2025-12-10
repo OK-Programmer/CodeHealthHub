@@ -89,7 +89,7 @@
                 var count = Issues.Count(i => 
                     {
                         var project = projects?.FirstOrDefault(p => p.Name == label);
-                        return project != null && i.project == project.Key;
+                        return project != null && i.Project == project.Key;
                     });
                 dataPoints.Add(count);
             }
@@ -111,7 +111,7 @@
     {
         if (Issues != null && Issues.Any())
         {
-            var projectKeys = (from issue in Issues select issue.project).Distinct().ToList();
+            var projectKeys = (from issue in Issues select issue.Project).Distinct().ToList();
             var projectNames = projects?.Where(p => projectKeys.Contains(p.Key)).Select(p => p.Name).ToList();
             return projectNames;
         }

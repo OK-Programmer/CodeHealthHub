@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CodeHealthHub.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-    {
-    }
-
     public DbSet<SonarQubeProject> SonarQubeProjects { get; set; }
 
     public DbSet<SonarQubeInstance> SonarQubeInstances { get; set; }
+
+    public DbSet<ProjectMeasures> ProjectMeasures { get; set; }
+
+    public DbSet<Measure> Measures { get; set; }
 }

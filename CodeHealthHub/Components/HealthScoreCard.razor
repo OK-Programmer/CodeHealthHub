@@ -28,10 +28,10 @@
         {
             List<Measure> measureList = projMeasures.Measures;
             ProjectHealthScore phs = new ProjectHealthScore(){
-                Vulnerability = (int)float.Parse(measureList.Find(m => m.metric == "security_rating")?.value ?? "0.0"),
-                Bugs = (int)float.Parse(measureList.Find(m => m.metric == "reliability_rating")?.value ?? "0.0"),
-                CodeSmells = (int)float.Parse(measureList.Find(m => m.metric == "sqale_rating")?.value ?? "0.0"),
-                SecHotspots = (int)float.Parse(measureList.Find(m => m.metric == "security_review_rating")?.value ?? "0.0"),
+                Vulnerability = (int)float.Parse(measureList.Find(m => m.Metric == "security_rating")?.Value ?? "0.0"),
+                Bugs = (int)float.Parse(measureList.Find(m => m.Metric == "reliability_rating")?.Value ?? "0.0"),
+                CodeSmells = (int)float.Parse(measureList.Find(m => m.Metric == "sqale_rating")?.Value ?? "0.0"),
+                SecHotspots = (int)float.Parse(measureList.Find(m => m.Metric == "security_review_rating")?.Value ?? "0.0"),
             };
             allProjectHealthScores.Add(phs);
         }

@@ -3,7 +3,7 @@ using CodeHealthHub.Models;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using CodeHealthHub.Data;
-using System.Reflection.Metadata.Ecma335;
+using Microsoft.EntityFrameworkCore;
 
 namespace CodeHealthHub.Controllers;
 
@@ -13,23 +13,11 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
 {
     private readonly AppDbContext _dbContext = dbContext;
 
-    protected void RecalculateWeights() {
-        List<SonarQubeProject> projects = _dbContext.SonarQubeProjects.ToList();
-        double weight = 1.0 / projects.Count;
-
-        foreach (SonarQubeProject project in projects) {
-            project.Weight = weight;
-            _dbContext.SonarQubeProjects.Update(project);
-        }
-
-        _dbContext.SaveChanges();
-    }
-
     [HttpGet("projects")]
     public async Task<ActionResult<IEnumerable<SonarQubeProject>>> GetProjects() {
         // Fetch all projects from the database
-        List<SonarQubeProject> projects = _dbContext.SonarQubeProjects.ToList();
-        if (projects == null)
+        List<SonarQubeProject> projects = await _dbContext.SonarQubeProjects.ToListAsync();
+        if (projects.Count == 0)
         {
             return NotFound();
         }
@@ -42,33 +30,13 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
 
     [HttpGet("measures")]
     public async Task<ActionResult> GetAllMeasures() {
-        // Get URI builders for all SonarQube instances
-        List<UriBuilder> builders = Utility.GetInstancesURIBuilders(_dbContext);
-        // Fetch all project keys from the database
-        List<string> projectKeys = _dbContext.SonarQubeProjects.Select(p => p.Key).ToList();
-        List<ProjectMeasures> listOfMeasures = [];
+        List<ProjectMeasures> listOfMeasures = await _dbContext.ProjectMeasures
+            .Include(pm => pm.Measures)
+            .ToListAsync();
 
-        // for each SonarQube instance, and for each project in the instance, fetch measures
-        foreach(UriBuilder builder in builders) {
-            builder.Path = "/api/measures/component";
-            foreach(string key in projectKeys) {
-                // for each project key, fetch measures
-                ProjectMeasures? measures = await GetMeasures(builder, key);
-                if (measures == null) 
-                { 
-                    Debug.WriteLine($"GetAllMeasures(): No measures found for project {key}"); 
-                    break;
-                }
-                else
-                { 
-                    listOfMeasures.AddRange(measures); 
-                }
-            }
-        }
-
-        if (listOfMeasures == null)
+        if (listOfMeasures.Count == 0)
         {
-            return NotFound();
+            return NotFound("No measures found.");
         }
         else
         {
@@ -95,7 +63,7 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
         HttpRequestMessage? request = new(HttpMethod.Get, uri);
         string? response = await Utility.MakeRequest(request);
         
-        ProjectMeasures measureComponent;
+        ProjectMeasures? projMeasure;
         if (response == null)
         {
             Debug.WriteLine("GetMeasures(): Null response from request");
@@ -103,18 +71,75 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
         }
         else
         {
-            measureComponent = JsonConvert.DeserializeObject<MeasureSearchResponse>(response)!.component;
+            projMeasure = JsonConvert.DeserializeObject<MeasureSearchResponse>(response)!.Component;
         }
 
-        // Combine measures from API response into a single list
-        if (measureComponent == null)
+        if (projMeasure == null)
         {
             Debug.WriteLine("GetMeasures(): No measures found in response");
             return null;
         }
         else
         {
-            return measureComponent;
+            // Retrieve last analysis date from associated project
+            SonarQubeProject? project = _dbContext.SonarQubeProjects.FirstOrDefault(p => p.Key == projMeasure.Key);
+            if (project != null)
+            {
+                projMeasure.LastAnalysisDate = project.LastAnalysisDate;
+            }
+            return projMeasure;
+        }
+    }
+
+    [HttpGet("refresh-measures")]
+    public async Task<ActionResult> FetchAndUpdateMeasures() 
+    {
+        List<ProjectMeasures> projMeasuresList = [];
+        List<UriBuilder> builders = Utility.GetInstancesURIBuilders(_dbContext);
+        List<string> projectKeys = await _dbContext.SonarQubeProjects.Select(p => p.Key).ToListAsync();
+
+        // for each SonarQube instance, and for each project in the instance, fetch measures
+        foreach(UriBuilder builder in builders) {
+            builder.Path = "/api/measures/component";
+            foreach(string key in projectKeys) {
+                // for each project key, fetch measures
+                ProjectMeasures? projectMeasures = await GetMeasures(builder, key);
+                if (projectMeasures == null) 
+                { 
+                    Debug.WriteLine($"RefreshMeasures(): No measures found for project {key}"); 
+                    break;
+                }
+                else
+                { 
+                    projMeasuresList.Add(projectMeasures); 
+                }
+            }
+        }
+
+        // If projectMeasures is null, return NotFound
+        if (projMeasuresList == null)
+        {
+            Debug.WriteLine("No measures found.");
+            return NotFound();
+        }
+        else 
+        {
+            // Store new ProjectMeasures in database
+            foreach(ProjectMeasures pm in projMeasuresList)
+            {
+                // Check if ProjectMeasures entry already exists
+                bool existingPM = await _dbContext.ProjectMeasures.AnyAsync(p => 
+                    p.Key == pm.Key && 
+                    p.LastAnalysisDate == pm.LastAnalysisDate
+                );
+
+                if (!existingPM)
+                {
+                    _dbContext.ProjectMeasures.Add(pm); 
+                }
+            }
+            await _dbContext.SaveChangesAsync();
+            return Ok();
         }
     }
 
@@ -148,19 +173,18 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
                 }
                 else
                 {
-                    Debug.WriteLine($"Page {pageNumber} of issues retrieved. Total issues so far: {response?.issues.Count}");
                     if (pageNumber == 1)
                     {
                         response = currentResponse;
                     }
                     else
                     {
-                        response?.issues.AddRange(currentResponse.issues);
+                        response!.Issues.AddRange(currentResponse.Issues);
                     }
 
                     pageNumber++;
                 }
-            } while (response != null && response.issues.Count < response.total);
+            } while (response != null && response.Issues.Count < response.Total);
         }
 
         if (response != null)

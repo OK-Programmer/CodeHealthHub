@@ -91,7 +91,7 @@
 
         if (Issues != null)
         {
-            var groupedIssues = Issues.GroupBy(i => i.severity).ToList();
+            var groupedIssues = Issues.GroupBy(i => i.Severity).ToList();
 
             groupedIssues.ForEach(g =>
             {
@@ -108,7 +108,7 @@
 
         if (Issues != null)
         {
-            var groupedIssues = Issues.GroupBy(i => i.severity).ToList();
+            var groupedIssues = Issues.GroupBy(i => i.Severity).ToList();
             groupedIssues.ForEach((g) =>
             {
                 switch(g.Key)
@@ -144,7 +144,7 @@
         
         if (Issues != null)
         {
-            Issues.GroupBy(i => i.severity).ToList().ForEach(g =>
+            Issues.GroupBy(i => i.Severity).ToList().ForEach(g =>
             {
                 labels.Add(g.Key);
             });

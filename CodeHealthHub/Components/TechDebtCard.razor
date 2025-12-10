@@ -35,11 +35,11 @@
 
         foreach (Measure measure in projMeasures.Measures?? new List<Measure>())
         {
-            if (measure.metric == "sqale_index" || 
-                measure.metric == "reliability_remediation_effort" || 
-                measure.metric == "security_remediation_effort")
+            if (measure.Metric == "sqale_index" || 
+                measure.Metric == "reliability_remediation_effort" || 
+                measure.Metric == "security_remediation_effort")
             {
-                if (double.TryParse(measure.value, out double debtMinutes))
+                if (double.TryParse(measure.Value, out double debtMinutes))
                 {
                     totalDebtMinutes += debtMinutes;
                 }

@@ -4,9 +4,18 @@ namespace CodeHealthHub.Models;
 
 public class IssueSearchResponse
 {
-    public int total { get; set; }
-    public int p { get; set; }
-    public int ps { get; set; }
-    public int effortTotal { get; set; }
-    public List<Issue> issues { get; set; } = new();
+    public int Total { get; set; }
+    public int P { get; set; }
+    public int Ps { get; set; }
+    public int EffortTotal { get; set; }
+    public List<Issue> Issues { get; set; }
+
+    public IssueSearchResponse()
+    {
+        Total = 0;
+        P = 0;
+        Ps = 0;
+        EffortTotal = 0;
+        Issues = [];
+    }
 }
