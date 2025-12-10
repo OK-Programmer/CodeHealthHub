@@ -91,6 +91,7 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
         }
     }
 
+    // TODO: No function calls this yet. Call this in RefreshAndUpdateProjects to update measures together with project
     [HttpGet("refresh-measures")]
     public async Task<ActionResult> FetchAndUpdateMeasures() 
     {
