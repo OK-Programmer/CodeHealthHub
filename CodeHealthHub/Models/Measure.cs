@@ -9,8 +9,7 @@ public class Measure
     public required string Metric { get; set; }
     public required string Value { get; set; }
 
-    // Foreign key to associate Measure with ProjectMeasures
-    public required int ProjectMeasuresId { get; set; }
+    public required int ProjectScanId { get; set; } // Foreign key to ProjectScan
     [JsonIgnore]
-    public ProjectMeasures? ProjectMeasures { get; set; }
+    public ProjectScan? ProjectScan { get; set; } // Navigation property
 }

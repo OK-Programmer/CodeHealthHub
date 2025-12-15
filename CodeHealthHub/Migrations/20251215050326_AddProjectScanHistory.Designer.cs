@@ -2,6 +2,7 @@
 using CodeHealthHub.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -9,9 +10,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CodeHealthHub.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251215050326_AddProjectScanHistory")]
+    partial class AddProjectScanHistory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
@@ -114,15 +117,10 @@ namespace CodeHealthHub.Migrations
                     b.Property<int>("NumOfDevelopers")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("SonarQubeInstanceId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<double>("Weight")
                         .HasColumnType("REAL");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("SonarQubeInstanceId");
 
                     b.ToTable("SonarQubeProjects");
                 });
@@ -149,25 +147,9 @@ namespace CodeHealthHub.Migrations
                     b.Navigation("SonarQubeProject");
                 });
 
-            modelBuilder.Entity("CodeHealthHub.Models.SonarQubeProject", b =>
-                {
-                    b.HasOne("CodeHealthHub.Models.SonarQubeInstance", "SonarQubeInstance")
-                        .WithMany("Projects")
-                        .HasForeignKey("SonarQubeInstanceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("SonarQubeInstance");
-                });
-
             modelBuilder.Entity("CodeHealthHub.Models.ProjectScan", b =>
                 {
                     b.Navigation("Measures");
-                });
-
-            modelBuilder.Entity("CodeHealthHub.Models.SonarQubeInstance", b =>
-                {
-                    b.Navigation("Projects");
                 });
 
             modelBuilder.Entity("CodeHealthHub.Models.SonarQubeProject", b =>

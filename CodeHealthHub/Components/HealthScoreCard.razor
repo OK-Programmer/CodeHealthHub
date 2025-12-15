@@ -7,7 +7,7 @@
 
 @code {
     [Parameter]
-    public List<ProjectMeasures> allProjMeasures { get; set; } = new List<ProjectMeasures>();
+    public List<ProjectScan> allProjMeasures { get; set; } = new List<ProjectScan>();
     [Parameter]
     public List<double> weights { get; set; } = new List<double>();
     private string? overallHealthScore;
@@ -24,9 +24,9 @@
     {
         List<ProjectHealthScore>? allProjectHealthScores = new List<ProjectHealthScore>();
 
-        foreach(ProjectMeasures projMeasures in allProjMeasures)
+        foreach(ProjectScan projMeasures in allProjMeasures)
         {
-            List<Measure> measureList = projMeasures.Measures;
+            List<Measure> measureList = projMeasures.Measures?? new List<Measure>();
             ProjectHealthScore phs = new ProjectHealthScore(){
                 Vulnerability = (int)float.Parse(measureList.Find(m => m.Metric == "security_rating")?.Value ?? "0.0"),
                 Bugs = (int)float.Parse(measureList.Find(m => m.Metric == "reliability_rating")?.Value ?? "0.0"),

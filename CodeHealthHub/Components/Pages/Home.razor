@@ -50,7 +50,7 @@
 <div class="row mb-4">
     <div class="col">
         <div class="card">
-            <TestBarChart projects=@projects Issues=@issues></TestBarChart>
+            <ProjectIssueCountBarChart projects=@projects Issues=@issues></ProjectIssueCountBarChart>
         </div>
     </div>
     <div class="col">
@@ -64,7 +64,7 @@
     private List<SonarQubeProject>? projects = new List<SonarQubeProject>();
     private List<Issue> issues = new List<Issue>();
     private List<double> projectWeights = new List<double>();
-    private List<ProjectMeasures> projMeasuresList = new List<ProjectMeasures>();
+    private List<ProjectScan> projMeasuresList = new List<ProjectScan>();
     private int? issuesCount, effortTotal;
 
     protected override async Task OnInitializedAsync()
@@ -74,6 +74,7 @@
             await GetProjects();
             await GetIssues();
             await GetMeasures();
+            StateHasChanged(); 
         }
         catch (Exception e)
         {
@@ -92,7 +93,6 @@
             if (projects != null)
             {
                 projectWeights = (from project in projects select project.Weight).ToList();
-                StateHasChanged();
             }
         }
         catch (Exception)
@@ -115,7 +115,6 @@
                 issuesCount = issueSearchResponse.Total;
                 effortTotal = issueSearchResponse.EffortTotal;
                 issues = issueSearchResponse.Issues;
-                StateHasChanged();
             }
         }
         catch (Exception)
@@ -134,11 +133,10 @@
             var response = await httpClient.GetAsync(requestUri);
             if (response.IsSuccessStatusCode)
             {
-                List<ProjectMeasures>? measuresResponse = await response.Content.ReadFromJsonAsync<List<ProjectMeasures>>();
+                List<ProjectScan>? measuresResponse = await response.Content.ReadFromJsonAsync<List<ProjectScan>>();
                 if (measuresResponse != null)
                 {
                     projMeasuresList.AddRange(measuresResponse);
-                    StateHasChanged(); 
                 }
             }
             else

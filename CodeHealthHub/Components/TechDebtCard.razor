@@ -10,7 +10,7 @@
 
 @code {
     [Parameter]
-    public List<ProjectMeasures> allProjMeasures { get; set; } = new List<ProjectMeasures>();
+    public List<ProjectScan> allProjMeasures { get; set; } = new List<ProjectScan>();
     [Parameter]
     public List<SonarQubeProject> projects { get; set; } = new List<SonarQubeProject>();
     private double utd = 0.0;
@@ -20,16 +20,16 @@
     {
         double tempUTD = 0.0;
         double tempUTDCost = 0.0;
-        foreach(ProjectMeasures projMeasures in allProjMeasures) // essentially per project
+        foreach(ProjectScan projMeasures in allProjMeasures) // essentially per project
         {
             tempUTD += UTD(projMeasures);
-            tempUTDCost += UTDCost(utd, projMeasures.Key?? "");
+            tempUTDCost += UTDCost(utd, projMeasures.SonarQubeProjectId);
         }
         utd = tempUTD;
         utdCost = tempUTDCost;
     }
 
-    protected double UTD(ProjectMeasures projMeasures)
+    protected double UTD(ProjectScan projMeasures)
     {
         double totalDebtMinutes = 0.0;
 
@@ -49,12 +49,12 @@
         return totalDebtMinutes / 60.0; // convert to hours
     }
 
-    protected double UTDCost(double utd, string projectKey)
+    protected double UTDCost(double utd, int projectId)
     {
         try
         {
-            double hourlyRate = projects.Find(p => p.Key == projectKey)!.DeveloperCostPerHour;
-            double nEmployees = projects.Find(p => p.Key == projectKey)!.NumOfDevelopers;
+            double hourlyRate = projects.Find(p => p.Id == projectId)!.DeveloperCostPerHour;
+            double nEmployees = projects.Find(p => p.Id == projectId)!.NumOfDevelopers;
             return utd * hourlyRate * nEmployees ;
         }
         catch (Exception ex)

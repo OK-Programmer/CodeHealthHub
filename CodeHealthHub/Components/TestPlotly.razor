@@ -6,9 +6,9 @@
 <PlotlyChart @bind-Config="config" @bind-Layout="layout" @bind-Data="data" @ref="chart"/>
 
 @code {
-    PlotlyChart chart;
+    PlotlyChart? chart;
     Config config = new Config();
-    Layout layout = new Layout();
+    Plotly.Blazor.Layout layout = new Plotly.Blazor.Layout();
     // Using of the interface IList is important for the event callback!
     IList<ITrace> data = new List<ITrace>
     {

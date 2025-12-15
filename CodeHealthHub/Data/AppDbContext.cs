@@ -10,7 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     public DbSet<SonarQubeInstance> SonarQubeInstances { get; set; }
 
-    public DbSet<ProjectMeasures> ProjectMeasures { get; set; }
+    public DbSet<ProjectScan> ProjectScans { get; set; }
 
     public DbSet<Measure> Measures { get; set; }
 }

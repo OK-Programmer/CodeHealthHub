@@ -30,7 +30,7 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
 
     [HttpGet("measures")]
     public async Task<ActionResult> GetAllMeasures() {
-        List<ProjectMeasures> listOfMeasures = await _dbContext.ProjectMeasures
+        List<ProjectScan> listOfMeasures = await _dbContext.ProjectScans
             .Include(pm => pm.Measures)
             .ToListAsync();
 
@@ -41,106 +41,6 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
         else
         {
             return Ok(listOfMeasures);
-        }
-    }
-
-    protected async Task<ProjectMeasures?> GetMeasures(UriBuilder uriBuilder, string projectKey) {
-        List<string> healthScoreMetrics = 
-        [
-            "security_rating", 
-            "reliability_rating", 
-            "sqale_rating", 
-            "security_review_rating", 
-            "sqale_index", // maintainability debt
-            "reliability_remediation_effort", // reliability debt
-            "security_remediation_effort" // security debt
-        ];
-
-        uriBuilder.Path = "/api/measures/component";
-        uriBuilder.Query = $"metricKeys={string.Join(",",healthScoreMetrics.ToArray())}&component={projectKey}";
-        Uri? uri = uriBuilder.Uri;
-
-        HttpRequestMessage? request = new(HttpMethod.Get, uri);
-        string? response = await Utility.MakeRequest(request);
-        
-        ProjectMeasures? projMeasure;
-        if (response == null)
-        {
-            Debug.WriteLine("GetMeasures(): Null response from request");
-            return null;
-        }
-        else
-        {
-            projMeasure = JsonConvert.DeserializeObject<MeasureSearchResponse>(response)!.Component;
-        }
-
-        if (projMeasure == null)
-        {
-            Debug.WriteLine("GetMeasures(): No measures found in response");
-            return null;
-        }
-        else
-        {
-            // Retrieve last analysis date from associated project
-            SonarQubeProject? project = _dbContext.SonarQubeProjects.FirstOrDefault(p => p.Key == projMeasure.Key);
-            if (project != null)
-            {
-                projMeasure.LastAnalysisDate = project.LastAnalysisDate;
-            }
-            return projMeasure;
-        }
-    }
-
-    // TODO: No function calls this yet. Call this in RefreshAndUpdateProjects to update measures together with project
-    [HttpGet("refresh-measures")]
-    public async Task<ActionResult> FetchAndUpdateMeasures() 
-    {
-        List<ProjectMeasures> projMeasuresList = [];
-        List<UriBuilder> builders = Utility.GetInstancesURIBuilders(_dbContext);
-        List<string> projectKeys = await _dbContext.SonarQubeProjects.Select(p => p.Key).ToListAsync();
-
-        // for each SonarQube instance, and for each project in the instance, fetch measures
-        foreach(UriBuilder builder in builders) {
-            builder.Path = "/api/measures/component";
-            foreach(string key in projectKeys) {
-                // for each project key, fetch measures
-                ProjectMeasures? projectMeasures = await GetMeasures(builder, key);
-                if (projectMeasures == null) 
-                { 
-                    Debug.WriteLine($"RefreshMeasures(): No measures found for project {key}"); 
-                    break;
-                }
-                else
-                { 
-                    projMeasuresList.Add(projectMeasures); 
-                }
-            }
-        }
-
-        // If projectMeasures is null, return NotFound
-        if (projMeasuresList == null)
-        {
-            Debug.WriteLine("No measures found.");
-            return NotFound();
-        }
-        else 
-        {
-            // Store new ProjectMeasures in database
-            foreach(ProjectMeasures pm in projMeasuresList)
-            {
-                // Check if ProjectMeasures entry already exists
-                bool existingPM = await _dbContext.ProjectMeasures.AnyAsync(p => 
-                    p.Key == pm.Key && 
-                    p.LastAnalysisDate == pm.LastAnalysisDate
-                );
-
-                if (!existingPM)
-                {
-                    _dbContext.ProjectMeasures.Add(pm); 
-                }
-            }
-            await _dbContext.SaveChangesAsync();
-            return Ok();
         }
     }
 

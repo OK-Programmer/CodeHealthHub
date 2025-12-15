@@ -131,7 +131,7 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         List<UriBuilder>? builders = Utility.GetInstancesURIBuilders(_dbContext);
         List<SonarQubeProject>? projects = [];
 
-        // Call project search API for each SonarQube instance to get all projects from sonarqube
+        // Fetch: Call project search API for each SonarQube instance to get all projects from sonarqube
         foreach (UriBuilder builder in builders)
         {
             builder.Path = "/api/projects/search";
@@ -157,24 +157,81 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
                 }
             }
         }
-
+ 
+        // Update: Store new projects in database, update existing ones if last analysis date is different
         if (projects == null) {
             Debug.WriteLine("No projects found.");
             return NotFound();
         }
         else {
-            // Store new projects in database
+            bool newProjectsAdded = false;
             foreach(SonarQubeProject project in projects)
             {
+                // Store new projects in database, else update existing ones if last analysis date is different
                 bool projectExists = await _dbContext.SonarQubeProjects.AnyAsync(p => p.Key == project.Key);
                 if (!projectExists)
                 {
                     _dbContext.SonarQubeProjects.Add(project);
+                    newProjectsAdded = true;
+                    await _dbContext.SaveChangesAsync();
+
+                    // Trigger fetch for new project measures
+                    await FetchAndUpdateMeasures(project);
+                }
+                else
+                {
+                    SonarQubeProject? existingProject = await _dbContext.SonarQubeProjects.FirstOrDefaultAsync(p => p.Key == project.Key);
+                    if (existingProject != null && existingProject.LastAnalysisDate != project.LastAnalysisDate)
+                    {
+                        // Update existing project
+                        existingProject.LastAnalysisDate = project.LastAnalysisDate;
+                        _dbContext.SonarQubeProjects.Update(existingProject);
+
+                        // Trigger fetch for new analysis measures
+                        await FetchAndUpdateMeasures(existingProject);
+                    }
                 }
             }
-            await _dbContext.SaveChangesAsync();
-            RecalculateWeights();
+
+            if (newProjectsAdded) RecalculateWeights();
+
             return Ok();
+        }
+    }
+
+    /*
+    Fetches measures for a given SonarQube project in case of new scan and updates the database.
+    */
+    public async Task FetchAndUpdateMeasures(SonarQubeProject project)                                                                                                                                     
+    {
+        UriBuilder builder = _dbContext.SonarQubeInstances
+            .Where(instance => instance.Projects!.Any(p => p.Id == project.Id))
+            .Select(instance => new UriBuilder()
+            {
+                Scheme = instance.Scheme,
+                Host = instance.Host,
+                Port = instance.Port
+            })
+            .FirstOrDefault()!;
+
+        // Initialize new ProjectScan instance and get measures for this scan
+        ProjectScan? projectScan = await GetMeasures(builder, project);
+
+        if (projectScan == null) 
+        { 
+            Debug.WriteLine($"FetchAndUpdateMeasures(): No measures found for project {project.Key}"); 
+            return;
+        }
+        else 
+        {
+            // Add ProjectScan record if it does not already exist
+            bool existingPS = await _dbContext.ProjectScans.AnyAsync(p => p.Id == projectScan.Id);
+            if (!existingPS)
+            {
+                _dbContext.ProjectScans.Add(projectScan); 
+            }
+            await _dbContext.SaveChangesAsync();
+            return;
         }
     }
 
@@ -188,6 +245,51 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         }
 
         _dbContext.SaveChanges();
+    }
+
+    protected async Task<ProjectScan?> GetMeasures(UriBuilder uriBuilder, SonarQubeProject project) {
+        List<string> metricKeys = 
+        [
+            "security_rating", 
+            "reliability_rating", 
+            "sqale_rating", 
+            "security_review_rating", 
+            "sqale_index", // maintainability debt
+            "reliability_remediation_effort", // reliability debt
+            "security_remediation_effort" // security debt
+        ];
+
+        uriBuilder.Path = "/api/measures/component";
+        uriBuilder.Query = $"metricKeys={string.Join(",",metricKeys.ToArray())}&component={project.Key}";
+        Uri? uri = uriBuilder.Uri;
+
+        HttpRequestMessage? request = new(HttpMethod.Get, uri);
+        string? response = await Utility.MakeRequest(request);
+        
+        ProjectScan? projScan;
+        if (response == null)
+        {
+            Debug.WriteLine("GetMeasures(): Null response from request");
+            return null;
+        }
+        else
+        {
+            // This deserialization will only populate the Measures property of ProjectScan variable
+            projScan = JsonConvert.DeserializeObject<MeasureSearchResponse>(response)!.Component;
+        }
+
+        if (projScan == null)
+        {
+            Debug.WriteLine("GetMeasures(): No measures found in response");
+            return null;
+        }
+        else
+        {
+            projScan.SonarQubeProjectId = project.Id;
+            projScan.AnalysisDate = project.LastAnalysisDate;
+            projScan.CreatedAt = DateTime.UtcNow.ToString();
+            return projScan;
+        }
     }
 
     protected bool ValidateWeightUpdate(Dictionary<int, double> newWeights) {
