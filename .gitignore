@@ -1,3 +1,4 @@
 .vs
 CodeHealthHub/obj
 CodeHealthHub/bin
+CodeHealthHub/*.db
