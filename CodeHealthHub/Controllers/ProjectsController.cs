@@ -15,14 +15,16 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
     private readonly AppDbContext _dbContext = dbContext;
 
     [HttpGet("all")]
-    public async Task<ActionResult<List<SonarQubeProject>>> GetAllProjects() {
+    public async Task<ActionResult<List<SonarQubeProject>>> GetAllProjects() 
+    {
         List<SonarQubeProject> projects = await _dbContext.SonarQubeProjects.ToListAsync();
         if (projects == null) { return NotFound(); }
         else { return Ok(projects); }
     }
 
     [HttpPut("update-weights")]
-    public async Task<ActionResult> UpdateProjectWeights([FromBody] Dictionary<int, double> newWeights) {
+    public async Task<ActionResult> UpdateProjectWeights([FromBody] Dictionary<int, double> newWeights) 
+    {
         if (!ValidateWeightUpdate(newWeights)) {
             Debug.WriteLine("UpdateProjectWeights(): Invalid weight update parameter.");
             return BadRequest("UpdateProjectWeights(): Invalid weight update parameter.");
@@ -57,7 +59,8 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
     }
 
     [HttpPut("update-developer-count")]
-    public async Task<ActionResult> UpdateDeveloperCount([FromBody] Dictionary<int, int> newDevCounts) {
+    public async Task<ActionResult> UpdateDeveloperCount([FromBody] Dictionary<int, int> newDevCounts) 
+    {
         if (!ValidateDevCountUpdate(newDevCounts)) {
             Debug.WriteLine("UpdateDeveloperCount(): Invalid developer count update parameter.");
             return BadRequest("UpdateDeveloperCount(): Invalid developer count update parameter.");
@@ -92,7 +95,8 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
     }
 
     [HttpPut("update-developer-cost")]
-    public async Task<ActionResult> UpdateDeveloperCost([FromBody] Dictionary<int, double> newDevCosts) {
+    public async Task<ActionResult> UpdateDeveloperCost([FromBody] Dictionary<int, double> newDevCosts) 
+    {
         if (!ValidateDevCostUpdate(newDevCosts)) {
             Debug.WriteLine("UpdateDeveloperCost(): Invalid developer cost update parameter.");
             return BadRequest("UpdateDeveloperCost(): Invalid developer cost update parameter.");
@@ -127,13 +131,20 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
     }
 
     [HttpGet("refresh")]
-    public async Task<ActionResult> FetchAndUpdateProjects() {
-        List<UriBuilder>? builders = Utility.GetInstancesURIBuilders(_dbContext);
+    public async Task<ActionResult> FetchAndUpdateProjects() 
+    {        
+        Dictionary<int, UriBuilder>? instanceBuilders = Utility.GetInstancesURIBuilders(_dbContext);
+        if (instanceBuilders == null)
+        {
+            Debug.WriteLine("FetchAndUpdateProjects() could not find any SonarQubeInstances");
+            return NotFound("FetchAndUpdateProjects() could not find any SonarQubeInstances");
+        }
         List<SonarQubeProject>? projects = [];
 
         // Fetch: Call project search API for each SonarQube instance to get all projects from sonarqube
-        foreach (UriBuilder builder in builders)
+        foreach (int Id in instanceBuilders.Keys)
         {
+            UriBuilder builder = instanceBuilders[Id];
             builder.Path = "/api/projects/search";
             Uri? uri = builder.Uri;
             HttpRequestMessage request = new(HttpMethod.Get, uri);
@@ -154,6 +165,13 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
                 else
                 {
                     projects.AddRange(projSearchRes.Components);
+
+                    // Add SonarQubeInstance navigation reference to all projects fetched for this sonarqube instance
+                    foreach (SonarQubeProject project in projects)
+                    {
+                        // Instance existence already confirmed by earlier call to GetInstanceURIBuilders
+                        project.SonarQubeInstance = _dbContext.SonarQubeInstances.Find(Id)!; 
+                    }
                 }
             }
         }
@@ -167,10 +185,11 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
             bool newProjectsAdded = false;
             foreach(SonarQubeProject project in projects)
             {
-                // Store new projects in database, else update existing ones if last analysis date is different
+                // Store new projects in database and fetch project measures afterwards,
                 bool projectExists = await _dbContext.SonarQubeProjects.AnyAsync(p => p.Key == project.Key);
                 if (!projectExists)
                 {
+                    // Add SonarQubeInstance navigation reference
                     _dbContext.SonarQubeProjects.Add(project);
                     newProjectsAdded = true;
                     await _dbContext.SaveChangesAsync();
@@ -178,7 +197,8 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
                     // Trigger fetch for new project measures
                     await FetchAndUpdateMeasures(project);
                 }
-                else
+                // update existing project measures if last analysis date is different
+                else 
                 {
                     SonarQubeProject? existingProject = await _dbContext.SonarQubeProjects.FirstOrDefaultAsync(p => p.Key == project.Key);
                     if (existingProject != null && existingProject.LastAnalysisDate != project.LastAnalysisDate)
@@ -193,15 +213,28 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
                 }
             }
 
+            // Call recalculate weight to redistribute weight equally to all projects because new project added
             if (newProjectsAdded) RecalculateWeights();
 
             return Ok();
         }
     }
 
-    /*
-    Fetches measures for a given SonarQube project in case of new scan and updates the database.
-    */
+    [HttpDelete("{Id}")]
+    public async Task<ActionResult> DeleteProject(int Id)
+    {
+        SonarQubeProject? project = await _dbContext.SonarQubeProjects.FindAsync(Id);
+        if (project == null)
+        {
+            return NotFound();
+        }
+
+        _dbContext.SonarQubeProjects.Remove(project);
+        await _dbContext.SaveChangesAsync();
+
+        return NoContent();
+    }
+
     public async Task FetchAndUpdateMeasures(SonarQubeProject project)                                                                                                                                     
     {
         UriBuilder builder = _dbContext.SonarQubeInstances
@@ -235,19 +268,8 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         }
     }
 
-    protected void RecalculateWeights() {
-        List<SonarQubeProject> projects = _dbContext.SonarQubeProjects.ToList();
-        double weight = 1.0 / projects.Count;
-
-        foreach (SonarQubeProject project in projects) {
-            project.Weight = weight;
-            _dbContext.SonarQubeProjects.Update(project);
-        }
-
-        _dbContext.SaveChanges();
-    }
-
-    protected async Task<ProjectScan?> GetMeasures(UriBuilder uriBuilder, SonarQubeProject project) {
+    protected async Task<ProjectScan?> GetMeasures(UriBuilder uriBuilder, SonarQubeProject project) 
+    {
         List<string> metricKeys = 
         [
             "security_rating", 
@@ -285,6 +307,7 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         }
         else
         {
+            // Set rest of ProjectScan variable's properties
             projScan.SonarQubeProjectId = project.Id;
             projScan.AnalysisDate = project.LastAnalysisDate;
             projScan.CreatedAt = DateTime.UtcNow.ToString();
@@ -292,7 +315,21 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         }
     }
 
-    protected bool ValidateWeightUpdate(Dictionary<int, double> newWeights) {
+    protected void RecalculateWeights() 
+    {
+        List<SonarQubeProject> projects = _dbContext.SonarQubeProjects.ToList();
+        double weight = 1.0 / projects.Count;
+
+        foreach (SonarQubeProject project in projects) {
+            project.Weight = weight;
+            _dbContext.SonarQubeProjects.Update(project);
+        }
+
+        _dbContext.SaveChanges();
+    }
+
+    protected bool ValidateWeightUpdate(Dictionary<int, double> newWeights) 
+    {
         double totalWeight = 0.0;
         foreach(var entry in newWeights) 
         {
@@ -302,7 +339,8 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         return Math.Abs(totalWeight - 1.0) < 0.0001;
     }
 
-    protected bool ValidateDevCountUpdate(Dictionary<int, int> newDevCounts) {
+    protected bool ValidateDevCountUpdate(Dictionary<int, int> newDevCounts) 
+    {
         foreach(var entry in newDevCounts) 
         {
             if (entry.Value < 0) 
@@ -313,7 +351,8 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         return true;
     }
 
-    protected bool ValidateDevCostUpdate(Dictionary<int, double> newDevCosts) {
+    protected bool ValidateDevCostUpdate(Dictionary<int, double> newDevCosts) 
+    {
         foreach(var entry in newDevCosts) 
         {
             if (entry.Value < 0.0) 

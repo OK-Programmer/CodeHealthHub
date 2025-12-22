@@ -35,10 +35,17 @@ public class Utility()
         }
     }
 
-    public static List<UriBuilder> GetInstancesURIBuilders(AppDbContext _dbContext) {
+    public static Dictionary<int, UriBuilder>? GetInstancesURIBuilders(AppDbContext _dbContext) {
         // Fetch SonarQube instances from DB
-        List<SonarQubeInstance> instances = _dbContext.SonarQubeInstances.ToList();
-        List<UriBuilder> builders = [];
+        List<SonarQubeInstance>? instances = [.. _dbContext.SonarQubeInstances];
+        if (instances == null)
+        {
+            Debug.WriteLine("GetInstancesURIBuilders() could not find any SonarQubeInstances");
+            return null;
+        }
+        
+        // List<UriBuilder> builders = [];
+        Dictionary<int, UriBuilder> instanceBuilders = [];
 
         // Create URI builders for each instance
         foreach (SonarQubeInstance instance in instances) {
@@ -48,10 +55,10 @@ public class Utility()
                 Host = instance.Host,
                 Port = instance.Port
             };
-            builders.Add(builder);
+            instanceBuilders[instance.Id] = builder;
         }
 
-        // Return list of URI builders/all SonarQube instances
-        return builders;
+        // Return dictionary of uri builders for all SonarQubeInstance 
+        return instanceBuilders;
     }
 }

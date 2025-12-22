@@ -46,12 +46,19 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
 
     [HttpGet("issues")]
     public async Task<ActionResult<List<Issue>>> GetIssues() {
-        int pageNumber = 1;
-        IssueSearchResponse response = new();
-        List<UriBuilder> builders = Utility.GetInstancesURIBuilders(_dbContext);
-
-        foreach (UriBuilder builder in builders)
+        Dictionary<int, UriBuilder>? instanceBuilders = Utility.GetInstancesURIBuilders(_dbContext);
+        if (instanceBuilders == null)
         {
+            Debug.WriteLine("GetIssues() could not find any SonarQubeInstances");
+            return NotFound("GetIssues() could not find any SonarQubeInstances");
+        }
+
+        IssueSearchResponse response = new();
+        int pageNumber = 1;
+
+        foreach (int Id in instanceBuilders.Keys)
+        {
+            UriBuilder builder = instanceBuilders[Id];
             builder.Path = "/api/issues/search";
 
             do
