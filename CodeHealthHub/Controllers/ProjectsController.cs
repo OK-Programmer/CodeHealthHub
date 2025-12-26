@@ -134,7 +134,7 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
     public async Task<ActionResult> FetchAndUpdateProjects() 
     {        
         Dictionary<int, UriBuilder>? instanceBuilders = Utility.GetInstancesURIBuilders(_dbContext);
-        if (instanceBuilders == null)
+        if (instanceBuilders == null || instanceBuilders.Count == 0)
         {
             Debug.WriteLine("FetchAndUpdateProjects() could not find any SonarQubeInstances");
             return NotFound("FetchAndUpdateProjects() could not find any SonarQubeInstances");
@@ -157,10 +157,10 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
             else
             {
                 ProjectSearchResponse? projSearchRes = JsonConvert.DeserializeObject<ProjectSearchResponse>(response);
-                if (projSearchRes == null || projSearchRes.Components == null) 
+                if (projSearchRes == null || projSearchRes.Components == null || projSearchRes.Components.Count == 0) 
                 {
-                    Debug.WriteLine("FetchAndUpdateProjects(): Null deserialized project search response");
-                    return NotFound("FetchAndUpdateProjects(): Null deserialized project search response");
+                    Debug.WriteLine("FetchAndUpdateProjects(): deserialized project search response is null or empty");
+                    return NotFound("FetchAndUpdateProjects(): deserialized project search response is null or empty");
                 }
                 else
                 {
@@ -177,8 +177,8 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         }
  
         // Update: Store new projects in database, update existing ones if last analysis date is different
-        if (projects == null) {
-            Debug.WriteLine("No projects found.");
+        if (projects == null || projects.Count == 0) {
+            Debug.WriteLine("FetchAndUpdateProjects(): No projects found.");
             return NotFound();
         }
         else {

@@ -2,3 +2,5 @@
 CodeHealthHub/obj
 CodeHealthHub/bin
 CodeHealthHub/*.db
+CodeHealthHub/*.db-shm
+CodeHealthHub/*.db-wal

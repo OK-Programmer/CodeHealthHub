@@ -1,5 +1,6 @@
 @page "/instances"
 @using CodeHealthHub.Models
+@rendermode InteractiveServer
 @inject IHttpClientFactory HttpFactory
 @inject NavigationManager navigationManager
 
@@ -25,22 +26,30 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach(var instance in instances)
+                        @for(int i = 0; i < instances.Count; i++)
                         {
-                        <tr>
-                            <td>@instance.Id</td>
-                            <td>@instance.Name</td>
-                            <td>@URLs.ElementAt(instance.Id-1)</td>
-                            <td>
-                                <button class="btn btn-sm btn-secondary">Edit</button>
-                                <button class="btn btn-sm btn-danger">Delete</button>
-                            </td>
-                        </tr>
+                            var instance = instances[i];
+                            <tr>
+                                <td>@instance.Id</td>
+                                <td>@instance.Name</td>
+                                <td>@URLs.ElementAt(i)</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteInstance(instance.Id)">Delete</button>
+                                </td>
+                            </tr>
                         }
                     </tbody>
                 </table>
                 <div class="col text-end">
-                    <button class="btn btn-primary px-4">Add</button>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Add</button>
+                </div>
+                <!-- Modal -->
+                <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <AddInstanceForm></AddInstanceForm>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -49,8 +58,14 @@
 
 @code
 {
+    public required HttpClient _httpClient;
     List<SonarQubeInstance> instances = new List<SonarQubeInstance>();
     List<string> URLs = new List<string>();
+
+    protected override void OnInitialized()
+    {
+        _httpClient = HttpFactory.CreateClient("LocalApi");
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -59,6 +74,10 @@
         try
         {
             instances = await client.GetFromJsonAsync<List<SonarQubeInstance>>(allInstancesURL) ?? new List<SonarQubeInstance>();
+            
+            if (instances.Count == 0) 
+                return;
+            
             foreach(var instance in instances)
             {
                 URLs.Add(
@@ -74,6 +93,29 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error fetching instances: {ex.Message}");
+            navigationManager.NavigateTo("/Error");
+        }
+    }
+
+    protected async Task DeleteInstance(int Id) 
+    {
+        try
+        {
+            string requestUri = $"api/instances/{Id}";
+            Debug.WriteLine($"Calling URL: {_httpClient.BaseAddress}{requestUri}");
+            HttpResponseMessage response = await _httpClient.DeleteAsync(requestUri);
+            if (response.IsSuccessStatusCode)
+            {
+                instances = instances.Where(i => i.Id != Id).ToList();
+            }
+            else
+            {
+                Debug.WriteLine("Error deleting instance: " + response.ReasonPhrase);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine($"Exception when calling DeleteInstance(): {e}");
             navigationManager.NavigateTo("/Error");
         }
     }

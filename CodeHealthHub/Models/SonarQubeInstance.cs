@@ -5,15 +5,15 @@ namespace CodeHealthHub.Models;
 
 public class SonarQubeInstance()
 {
-    public required int Id { get; set; }
+    public int Id { get; set; }
 
-    public required string Name { get; set; }
+    public string Name { get; set; } = "";
 
-    public required string Scheme { get; set; }
+    public string Scheme { get; set; } = "";
 
-    public required string Host { get; set; }
+    public string Host { get; set; } = "";
 
-    public required int Port { get; set; }
+    public int Port { get; set; } = 0;
     
     public List<SonarQubeProject> Projects { get; set; } = new();
 }

@@ -17,15 +17,7 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
     public async Task<ActionResult<IEnumerable<SonarQubeProject>>> GetProjects() {
         // Fetch all projects from the database
         List<SonarQubeProject> projects = await _dbContext.SonarQubeProjects.ToListAsync();
-        if (projects.Count == 0)
-        {
-            return NotFound();
-        }
-        else
-        {
-            return Ok(projects);
-        }
-
+        return Ok(projects);
     }
 
     [HttpGet("measures")]
