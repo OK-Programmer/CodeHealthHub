@@ -21,24 +21,35 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
     }
 
     [HttpGet("measures")]
-    public async Task<ActionResult> GetAllMeasures() {
-        List<ProjectScan> listOfMeasures = await _dbContext.ProjectScans
-            .Include(pm => pm.Measures)
+    public async Task<ActionResult> GetLatestMeasures() {
+        // Step 1: get latest scan Id per SonarQubeProject
+        var latestScanIds = await _dbContext.ProjectScans
+            .GroupBy(ps => ps.SonarQubeProjectId)
+            .Select(g => g
+                .OrderByDescending(ps => ps.AnalysisDate)
+                .Select(ps => ps.Id)
+                .First())
             .ToListAsync();
 
-        if (listOfMeasures.Count == 0)
+        // Step 2: load scans + measures
+        var latestScans = await _dbContext.ProjectScans
+            .Where(ps => latestScanIds.Contains(ps.Id))
+            .Include(ps => ps.Measures)
+            .ToListAsync();
+
+        if (latestScans.Count == 0)
         {
-            return NotFound("No measures found.");
+            return NotFound();
         }
         else
         {
-            return Ok(listOfMeasures);
+            return Ok(latestScans);
         }
     }
 
     [HttpGet("issues")]
     public async Task<ActionResult<List<Issue>>> GetIssues() {
-        Dictionary<int, UriBuilder>? instanceBuilders = Utility.GetInstancesURIBuilders(_dbContext);
+        Dictionary<int, UriBuilder>? instanceBuilders = Utility.GetAllInstancesURIBuilders(_dbContext);
         if (instanceBuilders == null)
         {
             Debug.WriteLine("GetIssues() could not find any SonarQubeInstances");

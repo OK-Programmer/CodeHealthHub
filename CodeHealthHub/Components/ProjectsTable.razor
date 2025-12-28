@@ -17,7 +17,6 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th scope="col">#</th>
                     <th scope="col">Project Name</th>
                     <th scope="col">Last Analysis Date</th>
                     <th scope="col">Weight</th>
@@ -37,7 +36,6 @@
                     @foreach(SonarQubeProject project in projects)
                     {
                         <tr>
-                            <td scope="row">@project.Id</td>
                             <td>@project.Name</td>
                             <td>@FormatDate(project.LastAnalysisDate)</td>
                             <td>@String.Format("{0:0.000}", project.Weight)</td>

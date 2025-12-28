@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using CodeHealthHub.Data;
+using Newtonsoft.Json.Converters;
 
 namespace CodeHealthHub.Controllers;
 
@@ -13,6 +14,17 @@ namespace CodeHealthHub.Controllers;
 public class ProjectsController(AppDbContext dbContext) : ControllerBase
 {
     private readonly AppDbContext _dbContext = dbContext;
+
+    List<string> metricKeys = 
+        [
+            "security_rating", 
+            "reliability_rating", 
+            "sqale_rating", 
+            "security_review_rating", 
+            "sqale_index", // maintainability debt
+            "reliability_remediation_effort", // reliability debt
+            "security_remediation_effort" // security debt
+        ];
 
     [HttpGet("all")]
     public async Task<ActionResult<List<SonarQubeProject>>> GetAllProjects() 
@@ -133,7 +145,7 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
     [HttpGet("refresh")]
     public async Task<ActionResult> FetchAndUpdateProjects() 
     {        
-        Dictionary<int, UriBuilder>? instanceBuilders = Utility.GetInstancesURIBuilders(_dbContext);
+        Dictionary<int, UriBuilder>? instanceBuilders = Utility.GetAllInstancesURIBuilders(_dbContext);
         if (instanceBuilders == null || instanceBuilders.Count == 0)
         {
             Debug.WriteLine("FetchAndUpdateProjects() could not find any SonarQubeInstances");
@@ -183,6 +195,8 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         }
         else {
             bool newProjectsAdded = false;
+            DateTime to = DateTime.Today;
+            DateTime from = DateTime.Today.AddYears(-1);
             foreach(SonarQubeProject project in projects)
             {
                 // Store new projects in database and fetch project measures afterwards,
@@ -195,7 +209,7 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
                     await _dbContext.SaveChangesAsync();
 
                     // Trigger fetch for new project measures
-                    await FetchAndUpdateMeasures(project);
+                    await FetchAndUpdateMeasuresHistory(project, from, to);
                 }
                 // update existing project measures if last analysis date is different
                 else 
@@ -208,7 +222,7 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
                         _dbContext.SonarQubeProjects.Update(existingProject);
 
                         // Trigger fetch for new analysis measures
-                        await FetchAndUpdateMeasures(existingProject);
+                        await FetchAndUpdateMeasuresHistory(project, from, to);
                     }
                 }
             }
@@ -235,17 +249,9 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         return NoContent();
     }
 
-    public async Task FetchAndUpdateMeasures(SonarQubeProject project)                                                                                                                                     
+    protected async Task FetchAndUpdateMeasures(SonarQubeProject project)                                                                                                                                     
     {
-        UriBuilder builder = _dbContext.SonarQubeInstances
-            .Where(instance => instance.Projects!.Any(p => p.Id == project.Id))
-            .Select(instance => new UriBuilder()
-            {
-                Scheme = instance.Scheme,
-                Host = instance.Host,
-                Port = instance.Port
-            })
-            .FirstOrDefault()!;
+        UriBuilder builder = Utility.GetInstanceUriBuilder(_dbContext, project.Id);
 
         // Initialize new ProjectScan instance and get measures for this scan
         ProjectScan? projectScan = await GetMeasures(builder, project);
@@ -270,17 +276,6 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
 
     protected async Task<ProjectScan?> GetMeasures(UriBuilder uriBuilder, SonarQubeProject project) 
     {
-        List<string> metricKeys = 
-        [
-            "security_rating", 
-            "reliability_rating", 
-            "sqale_rating", 
-            "security_review_rating", 
-            "sqale_index", // maintainability debt
-            "reliability_remediation_effort", // reliability debt
-            "security_remediation_effort" // security debt
-        ];
-
         uriBuilder.Path = "/api/measures/component";
         uriBuilder.Query = $"metricKeys={string.Join(",",metricKeys.ToArray())}&component={project.Key}";
         Uri? uri = uriBuilder.Uri;
@@ -309,9 +304,106 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         {
             // Set rest of ProjectScan variable's properties
             projScan.SonarQubeProjectId = project.Id;
-            projScan.AnalysisDate = project.LastAnalysisDate;
-            projScan.CreatedAt = DateTime.UtcNow.ToString();
+            projScan.AnalysisDate = DateTime.Parse(project.LastAnalysisDate);
             return projScan;
+        }
+    }
+
+    protected async Task FetchAndUpdateMeasuresHistory(SonarQubeProject project, DateTime from, DateTime to)
+    {
+        UriBuilder builder = Utility.GetInstanceUriBuilder(_dbContext, project.Id);
+
+        List<MeasureHistory>? measureHistList = await GetMeasuresHistory(builder, project, from, to);
+
+        if (measureHistList != null)
+        {
+            foreach (MeasureHistory measureHist in measureHistList)
+            {
+                await ParseMeasureHistory(measureHist, project.Id);
+                await ParseHistoryValue(measureHist);
+            }            
+        }
+    }
+
+    protected async Task<List<MeasureHistory>?> GetMeasuresHistory(UriBuilder uriBuilder, SonarQubeProject project, DateTime from, DateTime to)
+    {
+        string format = "yyyy-MM-dd";
+        uriBuilder.Path = "/api/measures/search_history";
+        uriBuilder.Query = $"metrics={string.Join(",",metricKeys.ToArray())}&component={project.Key}&from={from.ToString(format)}&to={to.ToString(format)}";
+        Uri? uri = uriBuilder.Uri;
+
+        Debug.WriteLine($"GetMeasuresHistory() URI: {uri}");
+
+        HttpRequestMessage? request = new(HttpMethod.Get, uri);
+        string? response = await Utility.MakeRequest(request);
+
+        List<MeasureHistory>? measureHistList;
+        if (response == null)
+        {
+            Debug.WriteLine("GetMeasuresHistory(): Null response from request");
+            return null;
+        }
+        else
+        {
+            measureHistList = JsonConvert.DeserializeObject<HistoricalMeasuresSearchResponse>(response)!.Measures;
+        }
+
+        if (measureHistList == null || measureHistList.Count == 0)
+        {
+            Debug.WriteLine("GetMeasuresHistory(): No measures history found in response");
+            return null;
+        }
+        else
+        {
+            return measureHistList;
+        }
+    }
+
+    protected async Task ParseMeasureHistory(MeasureHistory measureHist, int projectId)
+    {
+        foreach(History hist in measureHist.History!)
+        {
+            ProjectScan projectScan = new()
+            {
+                SonarQubeProjectId = projectId,
+                AnalysisDate = DateTime.Parse(hist.Date)
+            };
+
+            bool scanExists = await _dbContext.ProjectScans.AnyAsync(p => p.AnalysisDate == projectScan.AnalysisDate);
+
+            if(!scanExists)
+            {
+                await _dbContext.ProjectScans.AddAsync(projectScan);
+                await _dbContext.SaveChangesAsync();
+            }
+        }
+    }
+
+    protected async Task ParseHistoryValue(MeasureHistory metricHistory)
+    {
+        foreach(History hist in metricHistory.History!)
+        {
+            Measure newMeasure = new()
+            {
+                Metric = metricHistory.Metric,
+                Value = hist.Value,
+                ProjectScanId = _dbContext.ProjectScans
+                    .Where(p => p.AnalysisDate == DateTime.Parse(hist.Date))
+                    .Select(p => p.Id)
+                    .SingleOrDefault()
+            };
+
+            bool measureExist = await _dbContext.Measures.AnyAsync(m => 
+                m.Metric == newMeasure.Metric &&
+                m.Value == newMeasure.Value &&
+                m.ProjectScanId == newMeasure.ProjectScanId
+            );
+
+            if (!measureExist)
+            {
+                await _dbContext.Measures.AddAsync(newMeasure);
+                await _dbContext.SaveChangesAsync();
+            }
         }
     }
 

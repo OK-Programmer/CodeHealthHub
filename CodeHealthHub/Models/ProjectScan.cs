@@ -7,15 +7,13 @@ public class ProjectScan
 {
     public int Id { get; set; }
 
-    public required int SonarQubeProjectId { get; set; } // Foreign key to SonarQubeProject
+    public int SonarQubeProjectId { get; set; } // Foreign key to SonarQubeProject
+    
+    public DateTime AnalysisDate { get; set; }
 
     [JsonIgnore]
     public SonarQubeProject? SonarQubeProject { get; set; } // Navigation property
 
-    public required string AnalysisDate { get; set; } = "";
-
-    public required string CreatedAt { get; set; } = "";
-    
     [ForeignKey("ProjectScanId")]
     public List<Measure>? Measures { get; set; }
 }

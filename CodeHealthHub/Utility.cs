@@ -35,7 +35,7 @@ public class Utility()
         }
     }
 
-    public static Dictionary<int, UriBuilder>? GetInstancesURIBuilders(AppDbContext _dbContext) {
+    public static Dictionary<int, UriBuilder>? GetAllInstancesURIBuilders(AppDbContext _dbContext) {
         // Fetch SonarQube instances from DB
         List<SonarQubeInstance>? instances = [.. _dbContext.SonarQubeInstances];
         if (instances == null)
@@ -60,5 +60,20 @@ public class Utility()
 
         // Return dictionary of uri builders for all SonarQubeInstance 
         return instanceBuilders;
+    }
+
+    public static UriBuilder GetInstanceUriBuilder(AppDbContext _dbContext, int Id)
+    {
+        UriBuilder builder = _dbContext.SonarQubeInstances
+            .Where(instance => instance.Projects!.Any(p => p.Id == Id))
+            .Select(instance => new UriBuilder()
+            {
+                Scheme = instance.Scheme,
+                Host = instance.Host,
+                Port = instance.Port
+            })
+            .FirstOrDefault()!;
+
+        return builder;
     }
 }
