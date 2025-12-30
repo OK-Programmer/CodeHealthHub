@@ -6,6 +6,9 @@ using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using CodeHealthHub.Data;
 using Newtonsoft.Json.Converters;
+using System.Globalization;
+using System.ComponentModel;
+using CodeHealthHub.Models.JsonTypes;
 
 namespace CodeHealthHub.Controllers;
 
@@ -151,6 +154,8 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
             Debug.WriteLine("FetchAndUpdateProjects() could not find any SonarQubeInstances");
             return NotFound("FetchAndUpdateProjects() could not find any SonarQubeInstances");
         }
+        
+        List<ProjectComponent>? components = [];
         List<SonarQubeProject>? projects = [];
 
         // Fetch: Call project search API for each SonarQube instance to get all projects from sonarqube
@@ -176,7 +181,17 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
                 }
                 else
                 {
-                    projects.AddRange(projSearchRes.Components);
+                    components = projSearchRes.Components;
+                    foreach (ProjectComponent component in components)
+                    {
+                        SonarQubeProject project = new()
+                        {
+                            Key = component.key,
+                            Name = component.name,
+                            LastAnalysisDate = DateTime.Parse(component.lastAnalysisDate)
+                        };
+                        projects.Add(project);
+                    }
 
                     // Add SonarQubeInstance navigation reference to all projects fetched for this sonarqube instance
                     foreach (SonarQubeProject project in projects)
@@ -304,7 +319,7 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         {
             // Set rest of ProjectScan variable's properties
             projScan.SonarQubeProjectId = project.Id;
-            projScan.AnalysisDate = DateTime.Parse(project.LastAnalysisDate);
+            projScan.AnalysisDate = project.LastAnalysisDate;
             return projScan;
         }
     }
@@ -321,7 +336,7 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
             {
                 await ParseMeasureHistory(measureHist, project.Id);
                 await ParseHistoryValue(measureHist);
-            }            
+            }
         }
     }
 

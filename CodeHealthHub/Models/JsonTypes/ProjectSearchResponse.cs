@@ -1,9 +1,10 @@
 using System;
+using CodeHealthHub.Models.JsonTypes;
 
-namespace CodeHealthHub.Models;
+namespace CodeHealthHub.Models.JsonTypes;
 
 public class ProjectSearchResponse
 {
     public Paging? Paging { get; set; }
-    public List<SonarQubeProject>? Components { get; set; }
+    public List<ProjectComponent>? Components { get; set; }
 }

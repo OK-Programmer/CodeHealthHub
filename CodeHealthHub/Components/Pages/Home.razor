@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using CodeHealthHub.Models
+@using CodeHealthHub.Models.JsonTypes
 @using System.Net.Http.Json
 @rendermode InteractiveServer
 @inject IHttpClientFactory HttpFactory
@@ -16,12 +17,12 @@
 <div class="row mb-4">
     <div class="col">
         <div class="card">
-            <HealthScoreCard allProjMeasures=@projMeasuresList weights=@projectWeights></HealthScoreCard>
+            <HealthScoreCard allProjMeasures=@projScanList weights=@projectWeights></HealthScoreCard>
         </div>
     </div>
     <div class="col">
         <div class="card">
-            <TechDebtCard allProjMeasures=@projMeasuresList projects=@projects></TechDebtCard>
+            <TechDebtCard allProjMeasures=@projScanList projects=@projects></TechDebtCard>
         </div>
     </div>
     <div class="col">
@@ -49,8 +50,11 @@
 
 <div class="row mb-4">
     <div class="col">
-        <div class="card">
+        <div class="card mb-4">
             <ProjectIssueCountBarChart projects=@projects Issues=@issues></ProjectIssueCountBarChart>
+        </div>
+        <div class="card">
+            <TechDebtLineChart></TechDebtLineChart>
         </div>
     </div>
     <div class="col">
@@ -64,7 +68,7 @@
     private List<SonarQubeProject>? projects = new List<SonarQubeProject>();
     private List<Issue> issues = new List<Issue>();
     private List<double> projectWeights = new List<double>();
-    private List<ProjectScan> projMeasuresList = new List<ProjectScan>();
+    private List<ProjectScan> projScanList = new List<ProjectScan>();
     private int? issuesCount, effortTotal;
 
     protected override async Task OnInitializedAsync()
@@ -136,7 +140,7 @@
                 List<ProjectScan>? measuresResponse = await response.Content.ReadFromJsonAsync<List<ProjectScan>>();
                 if (measuresResponse != null)
                 {
-                    projMeasuresList.AddRange(measuresResponse);
+                    projScanList.AddRange(measuresResponse);
                 }
             }
             else

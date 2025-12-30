@@ -1,6 +1,6 @@
 using System;
 
-namespace CodeHealthHub.Models;
+namespace CodeHealthHub.Models.JsonTypes;
 
 public class IssueSearchResponse
 {

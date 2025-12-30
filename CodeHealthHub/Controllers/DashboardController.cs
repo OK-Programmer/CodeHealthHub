@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using CodeHealthHub.Models;
+using CodeHealthHub.Models.JsonTypes;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using CodeHealthHub.Data;
@@ -44,6 +45,21 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
         else
         {
             return Ok(latestScans);
+        }
+    }
+
+    [HttpGet("measures-history/{Id}")]
+    public async Task<ActionResult> GetMeasuresHistory(int Id)
+    {
+        List<ProjectScan> projectScans = await _dbContext.ProjectScans.Where(p => p.SonarQubeProjectId == Id).Include(p => p.Measures).ToListAsync();
+
+        if (projectScans.Count == 0)
+        {
+            return NotFound();
+        }
+        else
+        {
+            return Ok(projectScans);
         }
     }
 

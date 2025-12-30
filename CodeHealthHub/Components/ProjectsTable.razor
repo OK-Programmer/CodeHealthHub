@@ -37,7 +37,7 @@
                     {
                         <tr>
                             <td>@project.Name</td>
-                            <td>@FormatDate(project.LastAnalysisDate)</td>
+                            <td>@String.Format("{0:yyyy-MM-dd HH:mm:ss}", project.LastAnalysisDate)</td>
                             <td>@String.Format("{0:0.000}", project.Weight)</td>
                         </tr>
                     }

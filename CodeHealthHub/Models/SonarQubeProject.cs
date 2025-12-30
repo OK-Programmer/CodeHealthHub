@@ -12,7 +12,7 @@ public class SonarQubeProject()
 
     public required string Name { get; set; }
 
-    public required string LastAnalysisDate { get; set; }
+    public required DateTime LastAnalysisDate { get; set; }
 
     [ForeignKey("SonarQubeProjectId")]
     public List<ProjectScan>? ProjectScans { get; set; }

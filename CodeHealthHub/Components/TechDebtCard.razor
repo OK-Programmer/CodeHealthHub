@@ -22,14 +22,14 @@
         double tempUTDCost = 0.0;
         foreach(ProjectScan projMeasures in allProjMeasures) // essentially per project
         {
-            tempUTD += UTD(projMeasures);
+            tempUTD += Utility.UTD(projMeasures);
             tempUTDCost += UTDCost(utd, projMeasures.SonarQubeProjectId);
         }
         utd = tempUTD;
         utdCost = tempUTDCost;
     }
 
-    protected double UTD(ProjectScan projMeasures)
+    @* protected double UTD(ProjectScan projMeasures)
     {
         double totalDebtMinutes = 0.0;
 
@@ -47,7 +47,7 @@
         }
 
         return totalDebtMinutes / 60.0; // convert to hours
-    }
+    } *@
 
     protected double UTDCost(double utd, int projectId)
     {

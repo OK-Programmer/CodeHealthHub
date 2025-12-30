@@ -76,4 +76,24 @@ public class Utility()
 
         return builder;
     }
+
+    public static double UTD(ProjectScan projScan)
+    {
+        double totalDebtMinutes = 0.0;
+
+        foreach (Measure measure in projScan.Measures?? new List<Measure>())
+        {
+            if (measure.Metric == "sqale_index" || 
+                measure.Metric == "reliability_remediation_effort" || 
+                measure.Metric == "security_remediation_effort")
+            {
+                if (double.TryParse(measure.Value, out double debtMinutes))
+                {
+                    totalDebtMinutes += debtMinutes;
+                }
+            }
+        }
+
+        return totalDebtMinutes / 60.0; // convert to hours
+    }
 }
