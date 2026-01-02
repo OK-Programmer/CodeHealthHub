@@ -1,0 +1,203 @@
+﻿@using CodeHealthHub.Models
+@using System.Reflection.Emit
+@inject IHttpClientFactory HttpFactory
+
+<div class="chart-container">
+    <ScatterChart @ref="scatterChart" />
+</div>
+
+@code {
+    [Parameter]
+    public List<SonarQubeProject> projects { get; set; } = new();
+    private ScatterChart scatterChart = default!;
+    private ScatterChartOptions scatterChartOptions = default!;
+    private ChartData chartData = default!;
+    private bool chartInitialized = false;
+
+    private int datasetsCount;
+    private int dataLabelsCount;
+
+    private Random random = new();
+
+    protected override void OnInitialized()
+    {
+        chartData = new ChartData { Labels = GetDataLabels(), Datasets = new() };
+        scatterChartOptions = new()
+        {
+            Responsive = true,
+            Interaction = new Interaction { Mode = InteractionMode.Index },
+        };
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await scatterChart.InitializeAsync(chartData, scatterChartOptions);
+            chartInitialized = true;
+        }
+        else if (chartData.Datasets!.Any() && chartInitialized == true)
+        {
+            await scatterChart.UpdateAsync(chartData, scatterChartOptions);
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    protected override async void OnParametersSet()
+    {
+        chartData.Datasets = await GetHistoryDatasets();
+
+        base.OnParametersSet();
+    }
+
+    #region Data Preparation
+
+    private async Task<List<IChartDataset>> GetHistoryDatasets()
+    {
+        var datasets = new List<IChartDataset>();
+
+        foreach (SonarQubeProject proj in projects)
+        {
+            List<ProjectScan> projScans = await GetMeasureHistory(proj.Id);
+
+            datasets.Add(GetScatterChartDataset(projScans, proj.Name));
+        }
+
+        return datasets;
+    }
+
+    private ScatterChartDataset GetScatterChartDataset(List<ProjectScan> projScans, string projName)
+    {
+        var c = ColorUtility.CategoricalTwelveColors[datasetsCount].ToColor();
+
+        datasetsCount += 1;
+
+        List<ScatterChartDataPoint> dataPoints = new();
+
+        foreach (ProjectScan scan in projScans)
+        {
+            double utd = Utility.UTD(scan);
+            dataPoints.Add(new ScatterChartDataPoint(scan.AnalysisDate.ToOADate(), utd));
+        }
+
+        return new ScatterChartDataset
+        {
+            Label = $"{projName}",
+            Data = dataPoints,
+            BackgroundColor = c.ToRgbaString(), // RGBA
+            BorderColor = c.ToRgbString(), // RGB
+            BorderWidth = 2,
+            Fill = true,
+            HoverBorderWidth = 4,
+            PointHoverRadius = new List<double> { 6 },
+        };
+    }
+
+    private async Task<List<ProjectScan>> GetMeasureHistory(int projId)
+    {
+        string? requestUri = $"api/dashboard/measures-history/{projId}";
+        HttpClient httpClient = HttpFactory.CreateClient("LocalApi");
+        Debug.WriteLine($"Calling URL: {httpClient.BaseAddress}{requestUri}");
+        try 
+        {
+            var response = await httpClient.GetAsync(requestUri);
+            if (response.IsSuccessStatusCode)
+            {
+                List<ProjectScan>? projectScans = await response.Content.ReadFromJsonAsync<List<ProjectScan>>();
+                if (projectScans != null)
+                {
+                    return projectScans;
+                }
+                else
+                {
+                    return [];
+                }
+            }
+            else
+            {
+                Debug.WriteLine($"Error fetching measures history: {response.ReasonPhrase}");
+                return [];
+            }
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
+
+    private List<string> GetDataLabels()
+    {
+        var labels = new List<string>();
+        foreach (SonarQubeProject proj in projects)
+        {
+            labels.Add(proj.Name);
+        }
+
+        return labels;
+    }
+
+    #endregion Data Preparation
+
+    #region Defaults
+
+    private List<IChartDataset> GetDefaultDataSets(int numberOfDatasets)
+    {
+        var datasets = new List<IChartDataset>();
+
+        for (var index = 0; index < numberOfDatasets; index++)
+        {
+            datasets.Add(GetRandomScatterChartDataset());
+        }
+
+        return datasets;
+    }
+
+    private ScatterChartDataset GetRandomScatterChartDataset()
+    {
+        var c = ColorUtility.CategoricalTwelveColors[datasetsCount].ToColor();
+
+        datasetsCount += 1;
+
+        return new ScatterChartDataset
+        {
+            Label = $"Team {datasetsCount}",
+            Data = GetRandomData(),
+            BackgroundColor = c.ToRgbaString(), // RGBA
+            BorderColor = c.ToRgbString(), // RGB
+            BorderWidth = 2,
+            Fill = true,
+            HoverBorderWidth = 4,
+            PointHoverRadius = new List<double> { 6 },
+        };
+    }
+
+    private List<ScatterChartDataPoint?> GetRandomData()
+    {
+        var data = new List<ScatterChartDataPoint?>();
+        for (var index = 0; index < dataLabelsCount; index++)
+        {
+            data.Add(new ScatterChartDataPoint(random.Next(200), random.Next(200)));
+        }
+
+        return data;
+    }
+
+    private List<string> GetDefaultDataLabels(int numberOfLabels)
+    {
+        var labels = new List<string>();
+        for (var index = 0; index < numberOfLabels; index++)
+        {
+            labels.Add(GetNextDataLabel());
+        }
+
+        return labels;
+    }
+
+    private string GetNextDataLabel()
+    {
+        dataLabelsCount += 1;
+        return $"Day {dataLabelsCount}";
+    }
+
+    #endregion Defaults
+}

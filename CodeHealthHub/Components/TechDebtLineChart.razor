@@ -1,4 +1,5 @@
 ﻿@using CodeHealthHub.Models
+@using System.Reflection.Emit
 @inject IHttpClientFactory HttpFactory
 
 <div class="chart-container">
@@ -6,15 +7,20 @@
 </div>
 
 @code {
+    [Parameter]
+    public List<SonarQubeProject> projects { get; set; } = new();
     private LineChart lineChart = default!;
     private LineChartOptions lineChartOptions = default!;
     private ChartData chartData = default!;
+    private bool chartInitialized = false;
+    private DateTime labelStartDate, labelEndDate;
 
     protected override void OnInitialized()
     {
         var colors = ColorUtility.CategoricalTwelveColors;
 
-        var labels = new List<string> { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+        var labels = new List<string>(12);
+
         var datasets = new List<IChartDataset>();
 
         var dataset1 = new LineChartDataset
@@ -72,11 +78,33 @@
         lineChartOptions.Plugins.Title.Display = true;
     }
 
+    protected override async void OnParametersSet()
+    {
+        // Add range of date labels so x-axis spans 12 months or a year
+        List<string> dateLabels = new List<string>();
+        labelStartDate = projects.OrderBy(p => p.LastAnalysisDate).Select(p => p.LastAnalysisDate).FirstOrDefault();
+        DateTime labelStart = DateTime.Parse("1/" + labelStartDate.Month + "/" + labelStartDate.Year);
+        dateLabels.Add(labelStart.ToShortDateString());
+        
+        for (int i = 1; i <= 11; i++) 
+        {
+            DateTime tick = labelStart.AddMonths(i);
+            dateLabels.Add(tick.ToShortDateString());
+        }
+        
+        chartData.Labels = dateLabels;
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             await lineChart.InitializeAsync(chartData, lineChartOptions);
+            chartInitialized = true;
+        }
+        else if (chartInitialized && chartData.Labels!.Any()) 
+        {
+            await lineChart.UpdateAsync(chartData, lineChartOptions);
         }
         await base.OnAfterRenderAsync(firstRender);
     }

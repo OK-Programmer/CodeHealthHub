@@ -1,16 +1,16 @@
 ﻿@using CodeHealthHub.Models
 
 <div class="card-body">
-    <h4 class="card-title">Tech Debt</h4>
+    <h4 class="card-title">Unified Tech Debt</h4>
     <p class="card-text">
-        Unified Tech Debt: @utd.ToString("0.0") hrs<br />
-        Unified Tech Debt Cost: $@utdCost.ToString("0.00")
+        Hours: @utd.ToString("0.0") hrs<br />
+        Cost: $@utdCost.ToString("0.00")
     </p>
 </div>
 
 @code {
     [Parameter]
-    public List<ProjectScan> allProjMeasures { get; set; } = new List<ProjectScan>();
+    public List<ProjectScan> latestProjMeasures { get; set; } = new List<ProjectScan>();
     [Parameter]
     public List<SonarQubeProject> projects { get; set; } = new List<SonarQubeProject>();
     private double utd = 0.0;
@@ -20,7 +20,7 @@
     {
         double tempUTD = 0.0;
         double tempUTDCost = 0.0;
-        foreach(ProjectScan projMeasures in allProjMeasures) // essentially per project
+        foreach(ProjectScan projMeasures in latestProjMeasures) // essentially per project
         {
             tempUTD += Utility.UTD(projMeasures);
             tempUTDCost += UTDCost(utd, projMeasures.SonarQubeProjectId);

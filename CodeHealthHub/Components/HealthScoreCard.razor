@@ -7,7 +7,7 @@
 
 @code {
     [Parameter]
-    public List<ProjectScan> allProjMeasures { get; set; } = new List<ProjectScan>();
+    public List<ProjectScan> latestProjMeasures { get; set; } = new List<ProjectScan>();
     [Parameter]
     public List<double> weights { get; set; } = new List<double>();
     private string? overallHealthScore;
@@ -24,7 +24,7 @@
     {
         List<ProjectHealthScore>? allProjectHealthScores = new List<ProjectHealthScore>();
 
-        foreach(ProjectScan projMeasures in allProjMeasures)
+        foreach(ProjectScan projMeasures in latestProjMeasures)
         {
             List<Measure> measureList = projMeasures.Measures?? new List<Measure>();
             ProjectHealthScore phs = new ProjectHealthScore(){
