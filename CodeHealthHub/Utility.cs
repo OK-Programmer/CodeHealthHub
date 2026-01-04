@@ -77,7 +77,7 @@ public class Utility()
         return builder;
     }
 
-    public static double UTD(ProjectScan projScan)
+    public static double CalculateUTD(ProjectScan projScan)
     {
         double totalDebtMinutes = 0.0;
 
@@ -95,5 +95,20 @@ public class Utility()
         }
 
         return totalDebtMinutes / 60.0; // convert to hours
+    }
+
+    public static double CalculateUTDCost(double utd, SonarQubeProject project)
+    {
+        try
+        {
+            double hourlyRate = project.DeveloperCostPerHour;
+            double nEmployees = project.NumOfDevelopers;
+            return utd * hourlyRate * nEmployees ;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error calculating UTD Cost: {ex.Message}");
+            return 0.0;
+        }
     }
 }

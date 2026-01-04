@@ -14,7 +14,7 @@
     private List<Issue>? previousIssues = null;
     private BarChart barChart = default!;
     private BarChartOptions barChartOptions = default!;
-    private ChartData chartData = default!;
+    private BlazorExpress.ChartJS.ChartData chartData = default!;
     private bool chartInitialized = false;
 
     protected override void OnInitialized()
@@ -22,7 +22,7 @@
         barChartOptions = new BarChartOptions();
         barChartOptions.Responsive = true;
         barChartOptions.MaintainAspectRatio = true;
-        barChartOptions.Interaction = new Interaction { Mode = InteractionMode.X };
+        barChartOptions.Interaction = new Interaction { Mode = BlazorExpress.ChartJS.InteractionMode.X };
         barChartOptions.IndexAxis = "x";
 
         barChartOptions.Plugins.Title!.Text = "Number of Issues Per Project";
@@ -55,11 +55,11 @@
                 };
                 datasets.Add(dataset1);
 
-                chartData = new ChartData { Labels = labels, Datasets = datasets };
+                chartData = new BlazorExpress.ChartJS.ChartData { Labels = labels, Datasets = datasets };
             }
             else
             {
-                chartData = new ChartData { Labels = new List<string>(), Datasets = new List<IChartDataset>() };
+                chartData = new BlazorExpress.ChartJS.ChartData { Labels = new List<string>(), Datasets = new List<IChartDataset>() };
             }
         }
     }

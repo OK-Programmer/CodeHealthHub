@@ -235,9 +235,10 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
                         // Update existing project
                         existingProject.LastAnalysisDate = project.LastAnalysisDate;
                         _dbContext.SonarQubeProjects.Update(existingProject);
+                        await _dbContext.SaveChangesAsync();
 
                         // Trigger fetch for new analysis measures
-                        await FetchAndUpdateMeasuresHistory(project, from, to);
+                        await FetchAndUpdateMeasuresHistory(existingProject, from, to);
                     }
                 }
             }
@@ -384,7 +385,10 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
                 AnalysisDate = DateTime.Parse(hist.Date)
             };
 
-            bool scanExists = await _dbContext.ProjectScans.AnyAsync(p => p.AnalysisDate == projectScan.AnalysisDate);
+            bool scanExists = await _dbContext.ProjectScans.AnyAsync(p => 
+                p.AnalysisDate == projectScan.AnalysisDate &&
+                p.SonarQubeProjectId == projectScan.SonarQubeProjectId
+            );
 
             if(!scanExists)
             {

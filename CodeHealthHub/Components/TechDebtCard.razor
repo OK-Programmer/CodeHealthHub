@@ -22,8 +22,8 @@
         double tempUTDCost = 0.0;
         foreach(ProjectScan projMeasures in latestProjMeasures) // essentially per project
         {
-            tempUTD += Utility.UTD(projMeasures);
-            tempUTDCost += UTDCost(utd, projMeasures.SonarQubeProjectId);
+            tempUTD += Utility.CalculateUTD(projMeasures);
+            tempUTDCost += Utility.CalculateUTDCost(utd, projects.Find(p => p.Id == projMeasures.Id)!);
         }
         utd = tempUTD;
         utdCost = tempUTDCost;
@@ -49,7 +49,7 @@
         return totalDebtMinutes / 60.0; // convert to hours
     } *@
 
-    protected double UTDCost(double utd, int projectId)
+    @* protected double UTDCost(double utd, int projectId)
     {
         try
         {
@@ -62,5 +62,5 @@
             Console.WriteLine($"Error calculating UTD Cost: {ex.Message}");
             return 0.0;
         }
-    }
+    } *@
 }

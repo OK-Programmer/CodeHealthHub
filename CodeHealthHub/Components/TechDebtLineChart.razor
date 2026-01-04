@@ -1,112 +1,110 @@
-﻿@using CodeHealthHub.Models
-@using System.Reflection.Emit
+﻿@using CodeHealthHub.Components.Pages
+@using CodeHealthHub.Models
+@using Plotly.Blazor.Examples
+@using Plotly.Blazor.Traces.IsoSurfaceLib.CapsLib
 @inject IHttpClientFactory HttpFactory
+@rendermode InteractiveServer
 
-<div class="chart-container">
-    <LineChart @ref="lineChart" />
-</div>
+<PlotlyChart @bind-Config="config" @bind-Layout="layout" @bind-Data="data" @ref="chart"/>
 
 @code {
     [Parameter]
     public List<SonarQubeProject> projects { get; set; } = new();
-    private LineChart lineChart = default!;
-    private LineChartOptions lineChartOptions = default!;
-    private ChartData chartData = default!;
-    private bool chartInitialized = false;
-    private DateTime labelStartDate, labelEndDate;
+    private PlotlyChart chart = new();
+    private IList<ITrace>? data;
+    private Plotly.Blazor.Layout layout = new();
+    private Config config = new();
+    private bool _needsUpdate = false, _chartReady = false;
+
+    protected class DataPoint() 
+    {
+        public DateTime dateTime;
+        public double value;
+    }
 
     protected override void OnInitialized()
     {
-        var colors = ColorUtility.CategoricalTwelveColors;
-
-        var labels = new List<string>(12);
-
-        var datasets = new List<IChartDataset>();
-
-        var dataset1 = new LineChartDataset
+        data = new List<ITrace>
         {
-            Label = "Windows",
-            Data = new List<double?> { 7265791, 5899643, 6317759, 6315641, 5338211, 8496306, 7568556, 8538933, 8274297, 8657298, 7548388, 7764845 },
-            BackgroundColor = colors[0],
-            BorderColor = colors[0],
-            BorderWidth = 2,
-            HoverBorderWidth = 4,
-            // PointBackgroundColor = colors[0],
-            // PointRadius = 0, // hide points
-            // PointHoverRadius = 4,
+            new Scatter
+            {
+                Mode = Plotly.Blazor.Traces.ScatterLib.ModeFlag.Lines | Plotly.Blazor.Traces.ScatterLib.ModeFlag.Markers,
+                X = Array.Empty<object>(),
+                Y = Array.Empty<object>()
+            }
         };
-        datasets.Add(dataset1);
 
-        var dataset2 = new LineChartDataset
+        layout = new Plotly.Blazor.Layout
         {
-            Label = "macOS",
-            Data = new List<double?> { 1809499, 1816642, 2122410, 1809499, 1850793, 1846743, 1954797, 2391313, 1983430, 2469918, 2633303, 2821149 },
-            BackgroundColor = colors[1],
-            BorderColor = colors[1],
-            BorderWidth = 2,
-            HoverBorderWidth = 4,
-            // PointBackgroundColor = colors[1],
-            // PointRadius = 0, // hide points
-            // PointHoverRadius = 4,
+            Title = new Title { Text = "Project UTD Trend" },
+            XAxis = new List<XAxis>
+            {
+                new XAxis
+                {
+                    Type = Plotly.Blazor.LayoutLib.XAxisLib.TypeEnum.Date,
+                    Title = new Plotly.Blazor.LayoutLib.XAxisLib.Title { Text = "Time" }
+                }
+            },
+            YAxis = new List<YAxis>
+            {
+                new YAxis
+                {
+                    Title = new Plotly.Blazor.LayoutLib.YAxisLib.Title { Text = "Unified Tech Debt (hrs)" }
+                }
+            }
         };
-        datasets.Add(dataset2);
 
-        var dataset3 = new LineChartDataset
+        config = new Config
         {
-            Label = "Other",
-            Data = new List<double?> { 1081241, 1100363, 1118136, 1073255, 1120315, 1395736, 1488788, 1489466, 1489947, 1414739, 1735811, 1820171 },
-            BackgroundColor = colors[2],
-            BorderColor = colors[2],
-            BorderWidth = 2,
-            HoverBorderWidth = 4,
-            // PointBackgroundColor = colors[2],
-            // PointRadius = 0, // hide points
-            // PointHoverRadius = 4,
+            Responsive = true
         };
-        datasets.Add(dataset3);
-
-        chartData = new ChartData { Labels = labels, Datasets = datasets };
-
-        lineChartOptions = new();
-        lineChartOptions.Responsive = true;
-        lineChartOptions.Interaction = new Interaction { Mode = InteractionMode.Index };
-
-        lineChartOptions.Scales.X!.Title = new ChartAxesTitle { Text = "2019", Display = true };
-        lineChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = "Visitors", Display = true };
-
-        lineChartOptions.Plugins.Title!.Text = "Operating system";
-        lineChartOptions.Plugins.Title.Display = true;
     }
-
-    protected override async void OnParametersSet()
+    
+    protected override async Task OnParametersSetAsync()
     {
-        // Add range of date labels so x-axis spans 12 months or a year
-        List<string> dateLabels = new List<string>();
-        labelStartDate = projects.OrderBy(p => p.LastAnalysisDate).Select(p => p.LastAnalysisDate).FirstOrDefault();
-        DateTime labelStart = DateTime.Parse("1/" + labelStartDate.Month + "/" + labelStartDate.Year);
-        dateLabels.Add(labelStart.ToShortDateString());
-        
-        for (int i = 1; i <= 11; i++) 
+        if (projects == null || projects.Count == 0)
+            return;
+
+        // foreach(SonarQubeProject proj in projects) 
+        // {
+        List<DateTime> xvalues = new();
+        List<double> yvalues = new();
+        List<ProjectScan>? measuresHist = await GetMeasuresHistory(17);
+        if (measuresHist != null)
         {
-            DateTime tick = labelStart.AddMonths(i);
-            dateLabels.Add(tick.ToShortDateString());
+            xvalues = measuresHist.Select(h => h.AnalysisDate).ToList();
+            yvalues = measuresHist.Select(h => Utility.CalculateUTD(h)).ToList();
         }
         
-        chartData.Labels = dateLabels;
+        List<DataPoint> dataPoints = new();
+        for (int i = 0; i < xvalues.Count; i++)
+        {
+            dataPoints.Add(new DataPoint
+            {
+                dateTime = xvalues[i],
+                value = yvalues[i]
+            });
+        }
+
+        ((Scatter)data![0]).X = dataPoints.Select(p => (object)p.dateTime).ToList();
+        ((Scatter)data![0]).Y = dataPoints.Select(p => (object)p.value).ToList();
+        // }
+
+        _needsUpdate = true;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await lineChart.InitializeAsync(chartData, lineChartOptions);
-            chartInitialized = true;
+            _chartReady = true;
         }
-        else if (chartInitialized && chartData.Labels!.Any()) 
+
+        if (_chartReady && _needsUpdate)
         {
-            await lineChart.UpdateAsync(chartData, lineChartOptions);
+            _needsUpdate = false;
+            await chart.React();
         }
-        await base.OnAfterRenderAsync(firstRender);
     }
 
     // TODO: Write function to fetch allproject scan and included measures for all projects

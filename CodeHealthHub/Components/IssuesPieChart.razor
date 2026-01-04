@@ -10,7 +10,7 @@
     
     private PieChart pieChart = default!;
     private PieChartOptions pieChartOptions = default!;
-    private ChartData chartData = default!;
+    private BlazorExpress.ChartJS.ChartData chartData = default!;
 
     private List<Issue>? previousIssues = null;
     private bool chartInitialized = false;
@@ -33,11 +33,11 @@
             
             if (Issues != null && Issues.Any())
             {
-                chartData = new ChartData { Labels = GetDataLabels(), Datasets = GetDataSets(1) };
+                chartData = new BlazorExpress.ChartJS.ChartData { Labels = GetDataLabels(), Datasets = GetDataSets(1) };
             }
             else
             {
-                chartData = new ChartData { Labels = new List<string>(), Datasets = new List<IChartDataset>() };
+                chartData = new BlazorExpress.ChartJS.ChartData { Labels = new List<string>(), Datasets = new List<IChartDataset>() };
             }
         }
     }
