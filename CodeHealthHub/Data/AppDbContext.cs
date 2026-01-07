@@ -13,4 +13,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ProjectScan> ProjectScans { get; set; }
 
     public DbSet<Measure> Measures { get; set; }
+
+    public DbSet<PieChartColour> PieChartColours { get; set; }
 }

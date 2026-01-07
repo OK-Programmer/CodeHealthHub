@@ -1,0 +1,159 @@
+﻿@page "/settings"
+@using CodeHealthHub.Models.ViewModels
+@using System.ComponentModel.DataAnnotations
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IHttpClientFactory HttpFactory
+@inject NavigationManager navigationManager
+
+
+<PageTitle>Settings</PageTitle>
+
+<div class="header-container">
+    <h1>Settings</h1>
+    <p>In this page you can configure application settings, such as colours used in the dashboard's pie chart.</p>
+    <hr />
+</div>
+
+<div class="row d-flex justify-content-center">
+    <div class="col-8">
+        <div class="card">
+            <div class="card-body">
+                <h4>Configure Pie Chart Colours</h4>
+
+                @if (Model == null)
+                {
+                <p>Loading...</p>
+                }
+                else
+                {
+                <form Method="post" onsubmit="Submit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    @* @foreach (var property in Model!.GetType().GetProperties())
+                    {
+                        <div class="mb-3 row">
+                            <label for="@property.Name" class="col-sm-2 col-form-label">@property.Name:</label>
+                            <div class="col-sm-10">
+                                <input type="color" id="@property.Name" name="@property.Name" @bind="property.GetValue(Model)" class="form-control h-100">
+                            </div>
+                        </div>
+                    } *@
+                    
+                    <div class="mb-3 row">
+                        <label for="default-color" class="col-sm-2 col-form-label">Default Color:</label>
+                        <div class="col-sm-10">
+                            <input type="color" id="default-color" name="default" @bind="@Model.DefaultColour" @bind:event="oninput" class="form-control h-100">
+                        </div>
+                    </div>
+
+                    <div class="mb-3 row">
+                        <label for="info-color" class="col-sm-2 col-form-label">Info Color:</label>
+                        <div class="col-sm-10">
+                            <input type="color" id="info-color" name="info" @bind="@Model.InfoColour" class="form-control h-100">
+                        </div>
+                    </div>
+
+                    <div class="mb-3 row">
+                        <label for="minor-color" class="col-sm-2 col-form-label">Minor Color:</label>
+                        <div class="col-sm-10">
+                            <input type="color" id="minor-color" name="minor" @bind="@Model.MinorColour" class="form-control h-100">
+                        </div>
+                    </div>
+
+                    <div class="mb-3 row">
+                        <label for="major-color" class="col-sm-2 col-form-label">Major Color:</label>
+                        <div class="col-sm-10">
+                            <input type="color" id="major-color" name="major" @bind="@Model.MajorColour" class="form-control h-100">
+                        </div>
+                    </div>
+
+                    <div class="mb-3 row">
+                        <label for="critical-color" class="col-sm-2 col-form-label">Critical Color:</label>
+                        <div class="col-sm-10">
+                            <input type="color" id="critical-color" name="critical" @bind="@Model.CriticalColour" class="form-control h-100">
+                        </div>
+                    </div>
+
+                    <div class="mb-3 row">
+                        <label for="blocker-color" class="col-sm-2 col-form-label">Blocker Color:</label>
+                        <div class="col-sm-10">
+                            <input type="color" id="blocker-color" name="blocker" @bind="@Model.BlockerColour" class="form-control h-100">
+                        </div>
+                    </div> 
+                   
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private SettingsViewModel Model { get; set; } = new SettingsViewModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load existing color settings from a database if applicable
+        var getColoursURL = "api/settings/colours";
+        var client = HttpFactory.CreateClient("LocalApi");
+
+        try
+        {
+            SettingsViewModel? response = await client.GetFromJsonAsync<SettingsViewModel>(getColoursURL);
+            if (response != null)
+            {
+                Debug.WriteLine($"Default:  '{response.DefaultColour}'");
+                Debug.WriteLine($"Info:     '{response.InfoColour}'");
+                Debug.WriteLine($"Minor:    '{response.MinorColour}'");
+                Debug.WriteLine($"Major:    '{response.MajorColour}'");
+                Debug.WriteLine($"Critical: '{response.CriticalColour}'");
+                Debug.WriteLine($"Blocker:  '{response.BlockerColour}'");
+
+                Model.DefaultColour  = response.DefaultColour;
+                Model.InfoColour     = response.InfoColour;
+                Model.MinorColour    = response.MinorColour;
+                Model.MajorColour    = response.MajorColour;
+                Model.CriticalColour = response.CriticalColour;
+                Model.BlockerColour  = response.BlockerColour;
+            }
+            else 
+            {
+                Model = new SettingsViewModel();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching colour settings: {ex.Message}");
+            navigationManager.NavigateTo("/Error");
+        }
+    }
+
+    protected async Task Submit() 
+    {
+        // Save the color settings to a database or configuration file
+        var changeColoursURL = "api/settings/colours";
+        var client = HttpFactory.CreateClient("LocalApi");
+
+        try
+        {
+            Debug.WriteLine($"Model colours: {JsonSerializer.Serialize(Model)}");
+
+            @* var response = await client.PostAsJsonAsync(changeColoursURL, Model!);
+            
+            if (response.IsSuccessStatusCode) 
+            {
+                Debug.WriteLine("Colour settings changed successfully");
+                navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
+            } *@
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error changing colour settings: {ex.Message}");
+            navigationManager.NavigateTo("/Error");
+        }
+    }
+}
