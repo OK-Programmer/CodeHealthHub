@@ -50,11 +50,8 @@
 
 <div class="row mb-4">
     <div class="col">
-        <div class="card mb-4">
-            <ProjectIssueCountBarChart projects=@projects Issues=@issues></ProjectIssueCountBarChart>
-        </div>
         <div class="card">
-            <TechDebtLineChart projects=@projects></TechDebtLineChart>
+            <ProjectIssueCountBarChart projects=@projects Issues=@issues></ProjectIssueCountBarChart>
         </div>
     </div>
     <div class="col">
@@ -63,6 +60,15 @@
         </div>
     </div>
 </div>
+
+<div class="row mb-4">
+    <div class="col">
+        <div class="card">
+            <TechDebtLineChart projects=@projects></TechDebtLineChart>
+        </div>
+    </div>
+</div>
+
 
 @code {
     private List<SonarQubeProject>? projects = new List<SonarQubeProject>();

@@ -1,8 +1,8 @@
 @using CodeHealthHub.Models
 
-<div class="chart-container">
-    <BarChart @ref="barChart"></BarChart>
-</div>
+@* <div class="chart-container">
+</div>  *@
+<BarChart Height=300 @ref="barChart"></BarChart>
 
 @code {
     @* [Parameter]
@@ -21,7 +21,7 @@
     {
         barChartOptions = new BarChartOptions();
         barChartOptions.Responsive = true;
-        barChartOptions.MaintainAspectRatio = true;
+        barChartOptions.MaintainAspectRatio = false;
         barChartOptions.Interaction = new Interaction { Mode = BlazorExpress.ChartJS.InteractionMode.X };
         barChartOptions.IndexAxis = "x";
 

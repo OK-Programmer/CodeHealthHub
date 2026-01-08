@@ -1,8 +1,9 @@
 ﻿@using CodeHealthHub.Models
+@using System.IO.Pipelines
 
-<div class="chart-container">
-    <PieChart @ref="pieChart"></PieChart>
-</div>
+@* <div class="h-75">
+</div> *@
+<PieChart Height=300 @ref="pieChart"></PieChart>
 
 @code {
     [Parameter]
@@ -19,7 +20,7 @@
     {
         pieChartOptions = new();
         pieChartOptions.Responsive = true;
-        pieChartOptions.MaintainAspectRatio = true;
+        pieChartOptions.MaintainAspectRatio = false;
         pieChartOptions.Plugins.Title!.Text = "Issues Severity Distribution";
         pieChartOptions.Plugins.Title.Display = true;
     }

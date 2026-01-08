@@ -1,4 +1,5 @@
 ﻿@page "/settings"
+@rendermode InteractiveServer
 @using CodeHealthHub.Models.ViewModels
 @using System.ComponentModel.DataAnnotations
 @using System.Text.Json
@@ -23,68 +24,58 @@
 
                 @if (Model == null)
                 {
-                <p>Loading...</p>
+                    <p class="text-danger">Failed to load settings.</p>
                 }
                 else
                 {
-                <form Method="post" onsubmit="Submit">
-                    <DataAnnotationsValidator />
-                    <ValidationSummary />
-
-                    @* @foreach (var property in Model!.GetType().GetProperties())
-                    {
+                    <EditForm Model="Model" OnValidSubmit="SaveAsync" FormName="SettingsForm">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        
                         <div class="mb-3 row">
-                            <label for="@property.Name" class="col-sm-2 col-form-label">@property.Name:</label>
+                            <label for="default-color" class="col-sm-2 col-form-label">Default Color:</label>
                             <div class="col-sm-10">
-                                <input type="color" id="@property.Name" name="@property.Name" @bind="property.GetValue(Model)" class="form-control h-100">
+                                <input type="color" id="default-color" name="default" @bind-value="Model.DefaultColour" class="form-control h-100">
                             </div>
                         </div>
-                    } *@
+
+                        <div class="mb-3 row">
+                            <label for="info-color" class="col-sm-2 col-form-label">Info Color:</label>
+                            <div class="col-sm-10">
+                                <input type="color" id="info-color" name="info" @bind-value="Model.InfoColour" class="form-control h-100">
+                            </div>
+                        </div>
+
+                        <div class="mb-3 row">
+                            <label for="minor-color" class="col-sm-2 col-form-label">Minor Color:</label>
+                            <div class="col-sm-10">
+                                <input type="color" id="minor-color" name="minor" @bind-value="Model.MinorColour" class="form-control h-100">
+                            </div>
+                        </div>
+
+                        <div class="mb-3 row">
+                            <label for="major-color" class="col-sm-2 col-form-label">Major Color:</label>
+                            <div class="col-sm-10">
+                                <input type="color" id="major-color" name="major" @bind-value="Model.MajorColour" class="form-control h-100">
+                            </div>
+                        </div>
+
+                        <div class="mb-3 row">
+                            <label for="critical-color" class="col-sm-2 col-form-label">Critical Color:</label>
+                            <div class="col-sm-10">
+                                <input type="color" id="critical-color" name="critical" @bind-value="Model.CriticalColour" class="form-control h-100">
+                            </div>
+                        </div>
+
+                        <div class="mb-3 row">
+                            <label for="blocker-color" class="col-sm-2 col-form-label">Blocker Color:</label>
+                            <div class="col-sm-10">
+                                <input type="color" id="blocker-color" name="blocker" @bind-value="Model.BlockerColour" class="form-control h-100">
+                            </div>
+                        </div> 
                     
-                    <div class="mb-3 row">
-                        <label for="default-color" class="col-sm-2 col-form-label">Default Color:</label>
-                        <div class="col-sm-10">
-                            <input type="color" id="default-color" name="default" @bind="@Model.DefaultColour" @bind:event="oninput" class="form-control h-100">
-                        </div>
-                    </div>
-
-                    <div class="mb-3 row">
-                        <label for="info-color" class="col-sm-2 col-form-label">Info Color:</label>
-                        <div class="col-sm-10">
-                            <input type="color" id="info-color" name="info" @bind="@Model.InfoColour" class="form-control h-100">
-                        </div>
-                    </div>
-
-                    <div class="mb-3 row">
-                        <label for="minor-color" class="col-sm-2 col-form-label">Minor Color:</label>
-                        <div class="col-sm-10">
-                            <input type="color" id="minor-color" name="minor" @bind="@Model.MinorColour" class="form-control h-100">
-                        </div>
-                    </div>
-
-                    <div class="mb-3 row">
-                        <label for="major-color" class="col-sm-2 col-form-label">Major Color:</label>
-                        <div class="col-sm-10">
-                            <input type="color" id="major-color" name="major" @bind="@Model.MajorColour" class="form-control h-100">
-                        </div>
-                    </div>
-
-                    <div class="mb-3 row">
-                        <label for="critical-color" class="col-sm-2 col-form-label">Critical Color:</label>
-                        <div class="col-sm-10">
-                            <input type="color" id="critical-color" name="critical" @bind="@Model.CriticalColour" class="form-control h-100">
-                        </div>
-                    </div>
-
-                    <div class="mb-3 row">
-                        <label for="blocker-color" class="col-sm-2 col-form-label">Blocker Color:</label>
-                        <div class="col-sm-10">
-                            <input type="color" id="blocker-color" name="blocker" @bind="@Model.BlockerColour" class="form-control h-100">
-                        </div>
-                    </div> 
-                   
-                    <button type="submit" class="btn btn-primary">Save Settings</button>
-                </form>
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                    </EditForm>
                 }
             </div>
         </div>
@@ -93,67 +84,58 @@
 
 
 @code {
-    private SettingsViewModel Model { get; set; } = new SettingsViewModel();
+    [SupplyParameterFromForm]
+    private SettingsViewModel? Model { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    protected override async void OnInitialized()
     {
-        // Load existing color settings from a database if applicable
-        var getColoursURL = "api/settings/colours";
-        var client = HttpFactory.CreateClient("LocalApi");
-
+        Model ??= new();
+        
         try
         {
+            // Load existing color settings from a database if applicable
+            var getColoursURL = "api/settings/colours";
+            var client = HttpFactory.CreateClient("LocalApi");
             SettingsViewModel? response = await client.GetFromJsonAsync<SettingsViewModel>(getColoursURL);
             if (response != null)
             {
-                Debug.WriteLine($"Default:  '{response.DefaultColour}'");
-                Debug.WriteLine($"Info:     '{response.InfoColour}'");
-                Debug.WriteLine($"Minor:    '{response.MinorColour}'");
-                Debug.WriteLine($"Major:    '{response.MajorColour}'");
-                Debug.WriteLine($"Critical: '{response.CriticalColour}'");
-                Debug.WriteLine($"Blocker:  '{response.BlockerColour}'");
-
-                Model.DefaultColour  = response.DefaultColour;
-                Model.InfoColour     = response.InfoColour;
-                Model.MinorColour    = response.MinorColour;
-                Model.MajorColour    = response.MajorColour;
-                Model.CriticalColour = response.CriticalColour;
-                Model.BlockerColour  = response.BlockerColour;
-            }
-            else 
-            {
-                Model = new SettingsViewModel();
+                Debug.WriteLine("Response fetched colour settings successfully");
+                Model.DefaultColour  = response.DefaultColour  ?? Model.DefaultColour;
+                Model.InfoColour     = response.InfoColour     ?? Model.InfoColour;
+                Model.MinorColour    = response.MinorColour    ?? Model.MinorColour;
+                Model.MajorColour    = response.MajorColour    ?? Model.MajorColour;
+                Model.CriticalColour = response.CriticalColour ?? Model.CriticalColour;
+                Model.BlockerColour  = response.BlockerColour  ?? Model.BlockerColour;
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error fetching colour settings: {ex.Message}");
-            navigationManager.NavigateTo("/Error");
+            @* navigationManager.NavigateTo("/Error"); *@
         }
     }
 
-    protected async Task Submit() 
+    protected async Task SaveAsync() 
     {
-        // Save the color settings to a database or configuration file
-        var changeColoursURL = "api/settings/colours";
-        var client = HttpFactory.CreateClient("LocalApi");
-
         try
         {
-            Debug.WriteLine($"Model colours: {JsonSerializer.Serialize(Model)}");
+            // Save the color settings to a database or configuration file
+            var changeColoursURL = "api/settings/colours";
+            var client = HttpFactory.CreateClient("LocalApi");
+            Debug.WriteLine($"SaveAsync model: {JsonSerializer.Serialize(Model)}");
 
-            @* var response = await client.PostAsJsonAsync(changeColoursURL, Model!);
+            var response = await client.PostAsJsonAsync(changeColoursURL, Model!);
             
             if (response.IsSuccessStatusCode) 
             {
                 Debug.WriteLine("Colour settings changed successfully");
                 navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
-            } *@
+            }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error changing colour settings: {ex.Message}");
-            navigationManager.NavigateTo("/Error");
+            Debug.WriteLine($"Error saving colour settings: {ex.Message}");
+            @* navigationManager.NavigateTo("/Error"); *@
         }
     }
 }

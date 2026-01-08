@@ -4,16 +4,17 @@
 @inject IHttpClientFactory HttpFactory
 @rendermode InteractiveServer
 
-<PlotlyChart @bind-Config="config" @bind-Layout="layout" @bind-Data="data" @ref="chart"/>
+<PlotlyChart Config="config" Layout="layout" Data="data" @ref="chart"/>
 
 @code {
     [Parameter]
     public List<SonarQubeProject> projects { get; set; } = new();
-    private PlotlyChart chart = new();
-    private IList<ITrace>? data;
+    private PlotlyChart? chart;
+    private IList<ITrace>? data { get; set; } = new List<ITrace>();
     private Plotly.Blazor.Layout layout = new();
     private Config config = new();
     private bool _needsUpdate = false, _chartReady = false;
+    private int _lastProjectHash = 0;
 
     protected class DataPoint() 
     {
@@ -23,16 +24,6 @@
 
     protected override void OnInitialized()
     {
-        data = new List<ITrace>
-        {
-            new Scatter
-            {
-                Mode = Plotly.Blazor.Traces.ScatterLib.ModeFlag.Lines | Plotly.Blazor.Traces.ScatterLib.ModeFlag.Markers,
-                X = Array.Empty<object>(),
-                Y = Array.Empty<object>()
-            }
-        };
-
         layout = new Plotly.Blazor.Layout
         {
             Title = new Title { Text = "Project UTD Trend" },
@@ -64,49 +55,64 @@
         if (projects == null || projects.Count == 0)
             return;
 
-        // foreach(SonarQubeProject proj in projects) 
-        // {
-        List<DateTime> xvalues = new();
-        List<double> yvalues = new();
-        List<ProjectScan>? measuresHist = await GetMeasuresHistory(17);
-        if (measuresHist != null)
+        int currentHash = projects.GetHashCode();
+        if (currentHash == _lastProjectHash)
+            return;
+
+        _lastProjectHash = currentHash;
+
+        Debug.WriteLine($"Rebuilding chart at {DateTime.UtcNow:o}");
+
+        var newData = new List<ITrace>();
+
+        foreach (SonarQubeProject proj in projects)
         {
-            xvalues = measuresHist.Select(h => h.AnalysisDate).ToList();
-            yvalues = measuresHist.Select(h => Utility.CalculateUTD(h)).ToList();
-        }
-        
-        List<DataPoint> dataPoints = new();
-        for (int i = 0; i < xvalues.Count; i++)
-        {
-            dataPoints.Add(new DataPoint
+            List<DateTime> xvalues = new();
+            List<double> yvalues = new();
+            List<ProjectScan>? measuresHist = await GetMeasuresHistory(proj.Id);
+            if (measuresHist != null)
             {
-                dateTime = xvalues[i],
-                value = yvalues[i]
+                xvalues = measuresHist.Select(h => h.AnalysisDate).ToList();
+                yvalues = measuresHist.Select(h => Utility.CalculateUTD(h)).ToList();
+            }
+            
+            List<DataPoint> dataPoints = new();
+            for (int i = 0; i < xvalues.Count; i++)
+            {
+                dataPoints.Add(new DataPoint
+                {
+                    dateTime = xvalues[i],
+                    value = yvalues[i]
+                });
+            }
+
+            @* ((Scatter)data![0]).X = dataPoints.Select(p => (object)p.dateTime).ToList();
+            ((Scatter)data![0]).Y = dataPoints.Select(p => (object)p.value).ToList(); *@
+
+            newData.Add(new Scatter
+            {
+                Name = proj.Name,
+                Mode = Plotly.Blazor.Traces.ScatterLib.ModeFlag.Lines | Plotly.Blazor.Traces.ScatterLib.ModeFlag.Markers,
+                X = dataPoints.Select(p => (object)p.dateTime).ToList(),
+                Y = dataPoints.Select(p => (object)p.value).ToList()
             });
         }
 
-        ((Scatter)data![0]).X = dataPoints.Select(p => (object)p.dateTime).ToList();
-        ((Scatter)data![0]).Y = dataPoints.Select(p => (object)p.value).ToList();
-        // }
-
+        data = newData;
         _needsUpdate = true;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            _chartReady = true;
-        }
+        if (!_needsUpdate)
+            return;
 
-        if (_chartReady && _needsUpdate)
-        {
-            _needsUpdate = false;
+        _needsUpdate = false;
+
+        if (chart is not null)
             await chart.React();
-        }
     }
 
-    // TODO: Write function to fetch allproject scan and included measures for all projects
     protected async Task<List<ProjectScan>?> GetMeasuresHistory(int Id) 
     {
         List<ProjectScan> projScanList = new();
