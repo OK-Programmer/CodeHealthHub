@@ -15,14 +15,16 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
     private readonly AppDbContext _dbContext = dbContext;
 
     [HttpGet("projects")]
-    public async Task<ActionResult<IEnumerable<SonarQubeProject>>> GetProjects() {
+    public async Task<ActionResult<IEnumerable<SonarQubeProject>>> GetProjects() 
+    {
         // Fetch all projects from the database
         List<SonarQubeProject> projects = await _dbContext.SonarQubeProjects.ToListAsync();
         return Ok(projects);
     }
 
     [HttpGet("measures")]
-    public async Task<ActionResult> GetLatestMeasures() {
+    public async Task<ActionResult> GetLatestMeasures() 
+    {
         // Step 1: get latest scan Id per SonarQubeProject
         var latestScanIds = await _dbContext.ProjectScans
             .GroupBy(ps => ps.SonarQubeProjectId)
@@ -64,7 +66,8 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
     }
 
     [HttpGet("issues")]
-    public async Task<ActionResult<List<Issue>>> GetIssues() {
+    public async Task<ActionResult<List<Issue>>> GetIssues() 
+    {
         Dictionary<int, UriBuilder>? instanceBuilders = Utility.GetAllInstancesURIBuilders(_dbContext);
         if (instanceBuilders == null)
         {
@@ -122,5 +125,16 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
         {
             return NotFound();
         }
+    }
+
+    [HttpGet("piechart-colours")]
+    public async Task<ActionResult<List<PieChartColour>>> GetPiechartColours()
+    {
+        List<PieChartColour> piechartColours = _dbContext.PieChartColours.ToList();
+
+        if (piechartColours.Count != 0)
+            return Ok(piechartColours);
+        else
+            return NotFound();
     }
 }

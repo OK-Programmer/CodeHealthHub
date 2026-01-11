@@ -35,46 +35,48 @@
                         <div class="mb-3 row">
                             <label for="default-color" class="col-sm-2 col-form-label">Default Color:</label>
                             <div class="col-sm-10">
-                                <input type="color" id="default-color" name="default" @bind-value="Model.DefaultColour" class="form-control h-100">
+                                <input type="color" id="default-color" name="default" @bind-value="Model.DefaultColour" @bind-value:after="OnSettingChanged" class="form-control h-100">
                             </div>
                         </div>
 
                         <div class="mb-3 row">
                             <label for="info-color" class="col-sm-2 col-form-label">Info Color:</label>
                             <div class="col-sm-10">
-                                <input type="color" id="info-color" name="info" @bind-value="Model.InfoColour" class="form-control h-100">
+                                <input type="color" id="info-color" name="info" @bind-value="Model.InfoColour" @bind-value:after="OnSettingChanged" class="form-control h-100">
                             </div>
                         </div>
 
                         <div class="mb-3 row">
                             <label for="minor-color" class="col-sm-2 col-form-label">Minor Color:</label>
                             <div class="col-sm-10">
-                                <input type="color" id="minor-color" name="minor" @bind-value="Model.MinorColour" class="form-control h-100">
+                                <input type="color" id="minor-color" name="minor" @bind-value="Model.MinorColour" @bind-value:after="OnSettingChanged" class="form-control h-100">
                             </div>
                         </div>
 
                         <div class="mb-3 row">
                             <label for="major-color" class="col-sm-2 col-form-label">Major Color:</label>
                             <div class="col-sm-10">
-                                <input type="color" id="major-color" name="major" @bind-value="Model.MajorColour" class="form-control h-100">
+                                <input type="color" id="major-color" name="major" @bind-value="Model.MajorColour" @bind-value:after="OnSettingChanged" class="form-control h-100">
                             </div>
                         </div>
 
                         <div class="mb-3 row">
                             <label for="critical-color" class="col-sm-2 col-form-label">Critical Color:</label>
                             <div class="col-sm-10">
-                                <input type="color" id="critical-color" name="critical" @bind-value="Model.CriticalColour" class="form-control h-100">
+                                <input type="color" id="critical-color" name="critical" @bind-value="Model.CriticalColour" @bind-value:after="OnSettingChanged" class="form-control h-100">
                             </div>
                         </div>
 
                         <div class="mb-3 row">
                             <label for="blocker-color" class="col-sm-2 col-form-label">Blocker Color:</label>
                             <div class="col-sm-10">
-                                <input type="color" id="blocker-color" name="blocker" @bind-value="Model.BlockerColour" class="form-control h-100">
+                                <input type="color" id="blocker-color" name="blocker" @bind-value="Model.BlockerColour" @bind-value:after="OnSettingChanged" class="form-control h-100">
                             </div>
                         </div> 
                     
-                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                        <div>
+                            <button type="submit" class="btn btn-primary" disabled=@(!settingChanged)>Save Settings</button>
+                        </div>
                     </EditForm>
                 }
             </div>
@@ -86,6 +88,7 @@
 @code {
     [SupplyParameterFromForm]
     private SettingsViewModel? Model { get; set; }
+    private bool settingChanged { get; set; } = false;
 
     protected override async void OnInitialized()
     {
@@ -99,19 +102,20 @@
             SettingsViewModel? response = await client.GetFromJsonAsync<SettingsViewModel>(getColoursURL);
             if (response != null)
             {
-                Debug.WriteLine("Response fetched colour settings successfully");
+                Debug.WriteLine("Settings: fetched colour settings successfully");
                 Model.DefaultColour  = response.DefaultColour  ?? Model.DefaultColour;
                 Model.InfoColour     = response.InfoColour     ?? Model.InfoColour;
                 Model.MinorColour    = response.MinorColour    ?? Model.MinorColour;
                 Model.MajorColour    = response.MajorColour    ?? Model.MajorColour;
                 Model.CriticalColour = response.CriticalColour ?? Model.CriticalColour;
                 Model.BlockerColour  = response.BlockerColour  ?? Model.BlockerColour;
+                StateHasChanged();
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error fetching colour settings: {ex.Message}");
-            @* navigationManager.NavigateTo("/Error"); *@
+            navigationManager.NavigateTo("/Error");
         }
     }
 
@@ -135,7 +139,11 @@
         catch (Exception ex)
         {
             Debug.WriteLine($"Error saving colour settings: {ex.Message}");
-            @* navigationManager.NavigateTo("/Error"); *@
         }
+    }
+
+    protected void OnSettingChanged()
+    {
+        settingChanged = true;
     }
 }

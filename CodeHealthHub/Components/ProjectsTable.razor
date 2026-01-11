@@ -19,6 +19,8 @@
                 <tr>
                     <th scope="col">Project Name</th>
                     <th scope="col">Last Analysis Date</th>
+                    <th>Developer Count</th>
+                    <th>Developer Cost/Hr</th>
                     <th scope="col">Weight</th>
                 </tr>
             </thead>
@@ -38,6 +40,8 @@
                         <tr>
                             <td>@project.Name</td>
                             <td>@String.Format("{0:yyyy-MM-dd HH:mm:ss}", project.LastAnalysisDate)</td>
+                            <td>@project.NumOfDevelopers.ToString()</td>
+                            <td>@project.DeveloperCostPerHour.ToString()</td>
                             <td>@String.Format("{0:0.000}", project.Weight)</td>
                         </tr>
                     }

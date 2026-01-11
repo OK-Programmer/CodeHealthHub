@@ -1,18 +1,18 @@
 ﻿@using CodeHealthHub.Models
 @using System.IO.Pipelines
+@using CodeHealthHub.Models.ViewModels
+@using System.Drawing
 
-@* <div class="h-75">
-</div> *@
 <PieChart Height=300 @ref="pieChart"></PieChart>
 
 @code {
     [Parameter]
     public List<Issue>? Issues { get; set; }
-    
+    [Parameter]
+    public List<PieChartColour>? piechartColours { get; set; }
     private PieChart pieChart = default!;
     private PieChartOptions pieChartOptions = default!;
     private BlazorExpress.ChartJS.ChartData chartData = default!;
-
     private List<Issue>? previousIssues = null;
     private bool chartInitialized = false;
 
@@ -105,38 +105,39 @@
 
     private List<string> GetDatasetBackgroundColors()
     {
-        var colors = new List<string>();
+        List<string>? colours = new List<string>();
 
         if (Issues != null)
         {
-            var groupedIssues = Issues.GroupBy(i => i.Severity).ToList();
+            List<IGrouping<string, Issue>>? groupedIssues = Issues.GroupBy(i => i.Severity).ToList();
             groupedIssues.ForEach((g) =>
             {
-                switch(g.Key)
+                AddColourToList(g.Key.ToLower(), colours);
+                @* switch(g.Key)
                 {
                     case "BLOCKER":
-                        colors.Add("rgb(0, 0, 0)"); // Black
+                        AddColourToList(g.Key.ToLower());
                         break;
                     case "CRITICAL":
-                        colors.Add("rgb(255, 80, 80)"); // Red
+                        AddColourToList(g.Key.ToLower());
                         break;
                     case "MAJOR":
-                        colors.Add("rgb(250, 150, 80)"); // Orange
+                        AddColourToList(g.Key.ToLower());                       
                         break;
                     case "MINOR":
-                        colors.Add("rgb(250, 250, 80)"); // Yellow
+                        AddColourToList(g.Key.ToLower());
                         break;
                     case "INFO":
-                        colors.Add("rgb(100, 255, 60)"); // Green
+                        AddColourToList(g.Key.ToLower());
                         break;
                     default: 
-                        colors.Add("rgb(201, 203, 207)"); // Grey
+                        AddColourToList(g.Key.ToLower());
                         break;
-                }
+                } *@
             });
         }
 
-        return colors;
+        return colours;
     }
 
     private List<string> GetDataLabels()
@@ -155,4 +156,22 @@
     }
 
     #endregion  Data Preparation
+
+    public void AddColourToList(string category, List<string> colours)
+    {
+        PieChartColour? pcColour = piechartColours!.Find(c => c.CategoryName?.ToLower() == category);
+        if (pcColour != null)
+        {
+            string hexcode = pcColour.HexCode!;
+            Color colour = ConvertHexToColour(hexcode);
+            colours.Add(colour.ToRgbString());
+        }
+    }
+
+    public Color ConvertHexToColour(string hexValue)
+    {
+        int argb = Int32.Parse(hexValue.Replace("#", ""), System.Globalization.NumberStyles.HexNumber);
+        Color color = Color.FromArgb(argb);
+        return color;
+    }
 }

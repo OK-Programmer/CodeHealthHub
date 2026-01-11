@@ -13,7 +13,7 @@
     private IList<ITrace>? data { get; set; } = new List<ITrace>();
     private Plotly.Blazor.Layout layout = new();
     private Config config = new();
-    private bool _needsUpdate = false, _chartReady = false;
+    private bool _needsUpdate = false;
     private int _lastProjectHash = 0;
 
     protected class DataPoint() 
