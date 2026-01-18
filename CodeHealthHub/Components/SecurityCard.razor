@@ -1,0 +1,105 @@
+﻿@using CodeHealthHub.Components.Pages
+@using CodeHealthHub.Models
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+<div class="card-body">
+    <h4 class="card-title">Top Vulnerable Projects</h4>
+    @if (topVulnProjects != null && topVulnProjects.Count() != 0)
+    {
+        int index = 0;
+        while (index < topVulnProjects.Count() && index < 3)
+        {
+            var proj = topVulnProjects[index];
+            var num = index + 1;
+            <p class="card-text">@num. @proj.ProjName (@proj.Severity: @proj.VulnCount)</p>
+            index++;
+        }
+    }   
+</div>
+
+@code {
+    [Parameter]
+    public List<SonarQubeProject>? projects { get; set; }
+    [Parameter]
+    public List<ProjectIssue>? issues { get; set; }
+
+    private List<ListItem> topVulnProjects = new();
+
+    class ListItem
+    {
+        public string ProjName { get; set; } = string.Empty;
+        public string Severity { get; set; } = string.Empty;
+        public int VulnCount { get; set; } = 0;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (issues!.Count() == 0 || projects!.Count() == 0) return;
+
+        topVulnProjects = GetMostVulnProjs();
+    }
+
+    private List<ListItem> GetMostVulnProjs()
+    {
+        List<ListItem> mostVulnProjs = new();
+
+        // Find any proj with blockers
+        var projWithBlockers = GetProjWithSeverity("BLOCKER");
+        if (projWithBlockers != null)
+        {
+            mostVulnProjs.Add(projWithBlockers);
+        }
+
+        // Find any proj with criticals
+        var projWithCriticals = GetProjWithSeverity("CRITICAL");
+        if (projWithCriticals != null)
+        {
+            mostVulnProjs.Add(projWithCriticals);
+        }
+
+        // Find any proj with majors
+        var projWithMajors = GetProjWithSeverity("MAJOR");
+        if (projWithMajors != null)
+        {
+            mostVulnProjs.Add(projWithMajors);
+        }
+
+        // Find any proj with minors
+        var projWithMinors = GetProjWithSeverity("MINOR");
+        if (projWithMinors != null)
+        {
+            mostVulnProjs.Add(projWithMinors);
+        }
+
+        return mostVulnProjs;
+    }
+
+    private ListItem? GetProjWithSeverity(string severity)
+    {
+        int? projId = issues!
+            .Where(i => i.Type == "VULNERABILITY" && i.Severity == severity)
+            .GroupBy(i => i.SonarQubeProjectId)
+            .OrderByDescending(g => g.Count())
+            .Select(g => g.Key)
+            .FirstOrDefault(-1);
+
+        if (projId != -1)
+        {
+            var vulnCount = issues!
+                .Where(i => 
+                    i.SonarQubeProjectId == projId && 
+                    i.Severity == severity && 
+                    i.Type == "VULNERABILITY")
+                .Count();
+
+            return new ListItem()
+            {
+                ProjName = projects!.Find(p => p.Id == projId)!.Name,
+                Severity = severity.ToLower(),
+                VulnCount = vulnCount
+            };
+        }
+
+        return null;
+    }
+}

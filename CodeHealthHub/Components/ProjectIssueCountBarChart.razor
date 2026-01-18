@@ -8,10 +8,10 @@
     @* [Parameter]
     public List<SonarQubeProject>? Projects { get; set; } *@
     [Parameter]
-    public List<Issue>? Issues { get; set; }
+    public List<ProjectIssue>? Issues { get; set; }
     [Parameter]
     public List<SonarQubeProject>? projects { get; set; }
-    private List<Issue>? previousIssues = null;
+    private List<ProjectIssue>? previousIssues = null;
     private BarChart barChart = default!;
     private BarChartOptions barChartOptions = default!;
     private BlazorExpress.ChartJS.ChartData chartData = default!;

@@ -14,8 +14,6 @@ public class SonarQubeProject()
 
     public required DateTime LastAnalysisDate { get; set; }
 
-    [ForeignKey("SonarQubeProjectId")]
-    public List<ProjectScan>? ProjectScans { get; set; }
 
     public double Weight { get; set; }
 
@@ -23,7 +21,13 @@ public class SonarQubeProject()
 
     public double DeveloperCostPerHour { get; set; }
 
-    public int SonarQubeInstanceId { get; set; } // Foreign key
+    [ForeignKey("SonarQubeProjectId")]
+    public List<ProjectScan>? ProjectScans { get; set; }
+
+    [ForeignKey("SonarQubeProjectId")]
+    public List<ProjectIssue>? ProjectIssues { get; set; }
+
+    public int SonarQubeInstanceId { get; set; } // Foreign key to SonarQubeInstance
 
     [JsonIgnore]
     public SonarQubeInstance SonarQubeInstance { get; set; } = null!; // Navigation property

@@ -1,0 +1,79 @@
+﻿@page "/issues"
+@using CodeHealthHub.Models
+@using CodeHealthHub.Models.ViewModels
+@using CodeHealthHub.Models.JsonTypes
+@using System.Net.Http.Json
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpFactory
+@inject NavigationManager navigationManager
+@inject IJSRuntime JSRuntime
+
+
+<PageTitle>Issues</PageTitle>
+
+<div class="mb-4">
+    <h1>Issues</h1>
+    <p>This is the issues page. Here you can view all issues found for all projects.</p>
+    <hr />
+</div>
+
+<div class="row d-flex justify-content-center">
+    <div class="col-10">
+        <div class="card">
+            <div class="card-body p-6">
+                <div class="col text-end mb-3">
+                    <button type="button" class="btn btn-outline-dark me-2" @onclick="RefreshIssues">Refresh Issues Data</button>
+                </div>
+
+                <table class="table w-100">
+                    <thead>
+                        <tr>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <td>
+                            
+                        </td>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    public required HttpClient _httpClient;
+    public List<ProjectIssue>? issues { get; set; }
+
+    protected override void OnInitialized()
+    {
+        _httpClient = HttpFactory.CreateClient("LocalApi");
+
+
+    }
+
+    protected async Task RefreshIssues()
+    {
+        try
+        {
+            string requestUri = "api/issues/refresh";
+            Debug.WriteLine($"Calling URL: {_httpClient.BaseAddress}{requestUri}");
+            HttpResponseMessage response = await _httpClient.GetAsync(requestUri);
+            if (response.IsSuccessStatusCode)
+            {
+                navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Error updating projects: " + response.ReasonPhrase);
+                Debug.WriteLine("Error refreshing projects data: " + response.ReasonPhrase);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.WriteLine("Exception when calling RefreshProjects(): " + e);
+            navigationManager.NavigateTo("/Error");
+        }
+    }
+}

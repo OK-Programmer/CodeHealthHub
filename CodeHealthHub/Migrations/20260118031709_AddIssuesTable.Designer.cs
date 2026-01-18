@@ -3,6 +3,7 @@ using System;
 using CodeHealthHub.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,12 +11,58 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CodeHealthHub.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260118031709_AddIssuesTable")]
+    partial class AddIssuesTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
+
+            modelBuilder.Entity("CodeHealthHub.Models.Issue", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Debt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Effort")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Project")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SonarQubeProjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SonarQubeProjectId");
+
+                    b.ToTable("Issues");
+                });
 
             modelBuilder.Entity("CodeHealthHub.Models.Measure", b =>
                 {
@@ -54,52 +101,6 @@ namespace CodeHealthHub.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("PieChartColours");
-                });
-
-            modelBuilder.Entity("CodeHealthHub.Models.ProjectIssue", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("CreationDate")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("Debt")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("Effort")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("IssueKey")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Project")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Severity")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("SonarQubeProjectId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SonarQubeProjectId");
-
-                    b.ToTable("ProjectIssues");
                 });
 
             modelBuilder.Entity("CodeHealthHub.Models.ProjectScan", b =>
@@ -183,6 +184,17 @@ namespace CodeHealthHub.Migrations
                     b.ToTable("SonarQubeProjects");
                 });
 
+            modelBuilder.Entity("CodeHealthHub.Models.Issue", b =>
+                {
+                    b.HasOne("CodeHealthHub.Models.SonarQubeProject", "SonarQubeProject")
+                        .WithMany("Issues")
+                        .HasForeignKey("SonarQubeProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SonarQubeProject");
+                });
+
             modelBuilder.Entity("CodeHealthHub.Models.Measure", b =>
                 {
                     b.HasOne("CodeHealthHub.Models.ProjectScan", "ProjectScan")
@@ -192,17 +204,6 @@ namespace CodeHealthHub.Migrations
                         .IsRequired();
 
                     b.Navigation("ProjectScan");
-                });
-
-            modelBuilder.Entity("CodeHealthHub.Models.ProjectIssue", b =>
-                {
-                    b.HasOne("CodeHealthHub.Models.SonarQubeProject", "SonarQubeProject")
-                        .WithMany("ProjectIssues")
-                        .HasForeignKey("SonarQubeProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("SonarQubeProject");
                 });
 
             modelBuilder.Entity("CodeHealthHub.Models.ProjectScan", b =>
@@ -239,7 +240,7 @@ namespace CodeHealthHub.Migrations
 
             modelBuilder.Entity("CodeHealthHub.Models.SonarQubeProject", b =>
                 {
-                    b.Navigation("ProjectIssues");
+                    b.Navigation("Issues");
 
                     b.Navigation("ProjectScans");
                 });

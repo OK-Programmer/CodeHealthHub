@@ -321,10 +321,11 @@
             HttpResponseMessage response = await _httpClient.GetAsync(requestUri);
             if (response.IsSuccessStatusCode)
             {
-                navigationManager.NavigateTo(navigationManager.Uri, true);
+                navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
             }
             else
             {
+                await JSRuntime.InvokeVoidAsync("alert", "Error updating projects: " + response.ReasonPhrase);
                 Debug.WriteLine("Error refreshing projects data: " + response.ReasonPhrase);
             }
         }

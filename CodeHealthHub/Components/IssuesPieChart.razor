@@ -7,13 +7,13 @@
 
 @code {
     [Parameter]
-    public List<Issue>? Issues { get; set; }
+    public List<ProjectIssue>? Issues { get; set; }
     [Parameter]
     public List<PieChartColour>? piechartColours { get; set; }
     private PieChart pieChart = default!;
     private PieChartOptions pieChartOptions = default!;
     private BlazorExpress.ChartJS.ChartData chartData = default!;
-    private List<Issue>? previousIssues = null;
+    private List<ProjectIssue>? previousIssues = null;
     private bool chartInitialized = false;
 
     protected override void OnInitialized()
@@ -109,7 +109,7 @@
 
         if (Issues != null)
         {
-            List<IGrouping<string, Issue>>? groupedIssues = Issues.GroupBy(i => i.Severity).ToList();
+            List<IGrouping<string, ProjectIssue>>? groupedIssues = Issues.GroupBy(i => i.Severity).ToList();
             groupedIssues.ForEach((g) =>
             {
                 AddColourToList(g.Key.ToLower(), colours);

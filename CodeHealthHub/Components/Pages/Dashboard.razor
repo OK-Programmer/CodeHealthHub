@@ -33,9 +33,7 @@
     </div>
     <div class="col">
         <div class="card">
-            <div class="card-body">
-                <h4 class="card-title">Security</h4>
-            </div>
+            <SecurityCard projects=@projects issues=@issues></SecurityCard>
         </div>
     </div>
 </div>
@@ -74,7 +72,7 @@
 @code {
     private List<SonarQubeProject>? projects = new List<SonarQubeProject>();
     private List<PieChartColour> piechartColours = new List<PieChartColour>();
-    private List<Issue> issues = new List<Issue>();
+    private List<ProjectIssue> issues = new List<ProjectIssue>();
     private List<double> projectWeights = new List<double>();
     private List<ProjectScan> latestScansPerProj = new List<ProjectScan>();
     private int? issuesCount, effortTotal;
@@ -116,18 +114,18 @@
 
     protected async Task GetIssues()
     {
-        IssueSearchResponse? issueSearchResponse;
         try 
         {
+            List<ProjectIssue>? issueSearchResponse;
             var requestUri = "api/dashboard/issues";
             HttpClient httpClient = HttpFactory.CreateClient("LocalApi");
             Debug.WriteLine($"Calling URL: {httpClient.BaseAddress}{requestUri}");
-            issueSearchResponse = await httpClient.GetFromJsonAsync<IssueSearchResponse>(requestUri);
+            issueSearchResponse = await httpClient.GetFromJsonAsync<List<ProjectIssue>>(requestUri);
             if (issueSearchResponse != null)
             {
-                issuesCount = issueSearchResponse.Total;
-                effortTotal = issueSearchResponse.EffortTotal;
-                issues = issueSearchResponse.Issues;
+                issuesCount = issueSearchResponse.Count;
+                effortTotal = issueSearchResponse.Sum(i => i.Effort);
+                issues = issueSearchResponse;
             }
         }
         catch (Exception)

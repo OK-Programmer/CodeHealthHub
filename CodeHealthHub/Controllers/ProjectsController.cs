@@ -9,6 +9,7 @@ using Newtonsoft.Json.Converters;
 using System.Globalization;
 using System.ComponentModel;
 using CodeHealthHub.Models.JsonTypes;
+using CodeHealthHub.Components;
 
 namespace CodeHealthHub.Controllers;
 
@@ -245,9 +246,9 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
 
             // Call recalculate weight to redistribute weight equally to all projects because new project added
             if (newProjectsAdded) RecalculateWeights();
-
-            return Ok();
         }
+
+        return Ok();
     }
 
     [HttpDelete("{Id}")]
