@@ -131,15 +131,8 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
     public async Task<ActionResult<List<ProjectIssue>>> GetIssues()
     {
         List<ProjectIssue> projectIssues = await _dbContext.ProjectIssues.ToListAsync();
-
-        if (projectIssues.Count == 0)
-        {
-            return NotFound();
-        }
-        else 
-        {
-            return Ok(projectIssues);
-        }
+        
+        return Ok(projectIssues);
     }
 
     [HttpGet("piechart-colours")]

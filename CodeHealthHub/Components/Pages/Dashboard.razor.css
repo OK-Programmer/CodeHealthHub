@@ -11,6 +11,6 @@
     font-size: 1.25em;
 }
 
-::deep .card-body p, ::deep .card-body h4 {
+::deep .card-body p, ::deep .card-body {
     text-align: center;
 }

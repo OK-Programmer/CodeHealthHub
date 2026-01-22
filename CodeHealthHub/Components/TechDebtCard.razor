@@ -1,7 +1,10 @@
 ﻿@using CodeHealthHub.Models
 
 <div class="card-body">
-    <h4 class="card-title">Unified Tech Debt</h4>
+    <h5 class="card-title">
+        Unified Tech Debt
+        <CardTooltip TooltipText="Test text"/>
+    </h5>
     <p class="card-text">
         @utd.ToString("0.0") hours<br />
         $@utdCost.ToString("0.00")
