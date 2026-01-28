@@ -22,6 +22,7 @@
                     <th>Developer Count</th>
                     <th>Developer Cost/Hr</th>
                     <th scope="col">Weight</th>
+                    <th scope="col">Filter</th>
                 </tr>
             </thead>
             <tbody>
@@ -43,6 +44,7 @@
                             <td>@project.NumOfDevelopers.ToString()</td>
                             <td>@project.DeveloperCostPerHour.ToString()</td>
                             <td>@String.Format("{0:0.000}", project.Weight)</td>
+                            <td><input type="checkbox" @onclick="() => OnCheckboxChange(project.Name)" checked="@projectFilters[project.Name]"/></td>
                         </tr>
                     }
                 }
@@ -53,13 +55,24 @@
 
 
 @code {
-    private bool showProjectsTable = true; 
     [Parameter]
     public List<SonarQubeProject>? projects { get; set; }
+    [Parameter]
+    public EventCallback<List<SonarQubeProject>> OnProjectFilterChanged { get; set; }
+    private static Dictionary<string, bool> projectFilters = new Dictionary<string, bool>();
+    private bool showProjectsTable = true;
+    private static bool firstRender = true;
 
-    protected override void OnAfterRender(bool firstRender)
+    protected override async Task OnParametersSetAsync()
     {
-        base.OnAfterRender(firstRender);
+        if (projects != null && firstRender)
+        {
+            foreach (var project in projects)
+            {
+                projectFilters[project.Name] = true;
+            }
+            firstRender = false;
+        }
     }
 
     protected void ToggleProjectsTable()
@@ -67,7 +80,29 @@
         showProjectsTable = !showProjectsTable;
     }
 
-    protected string FormatDate(string input)
+    protected async Task UpdateItems()
+    {
+        List<SonarQubeProject> filteredProjects = new List<SonarQubeProject>();
+        if (projects != null)
+        {
+            foreach (var project in projects)
+            {
+                if (projectFilters[project.Name])
+                {
+                    filteredProjects.Add(project);
+                }
+            }
+        }
+        await OnProjectFilterChanged.InvokeAsync(filteredProjects);
+    }
+
+    protected async void OnCheckboxChange(string projectName)
+    {
+        projectFilters[projectName] = projectFilters[projectName] ? false : true;
+        await UpdateItems();
+    }
+
+    @* protected string FormatDate(string input)
     {
         var dto = DateTimeOffset.ParseExact(
             input,
@@ -78,5 +113,5 @@
         DateTime sgTime = TimeZoneInfo.ConvertTime(dto.UtcDateTime, sgZone);
         string formatted = sgTime.ToString("dd MMM yyyy HH:mm:ss");
         return formatted;
-    }
+    } *@
 }

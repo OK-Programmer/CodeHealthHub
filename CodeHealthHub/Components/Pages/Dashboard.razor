@@ -9,10 +9,10 @@
 
 <PageTitle>Dashboard</PageTitle>
 
-<div class="header-container">
+@* <div class="header-container">
     <h1>Dashboard</h1>
     <hr />
-</div>
+</div> *@
 
 <!-- Summary Cards -->
 <div class="row mb-4">
@@ -42,7 +42,7 @@
 <div class="row mb-4">
     <div class="col">
         <div class="card">
-            <ProjectsTable projects=@projects></ProjectsTable>
+            <ProjectsTable projects=@projects OnProjectFilterChanged="@HandleProjectFilterChanged"></ProjectsTable>
         </div>
     </div>
 </div>
@@ -50,12 +50,12 @@
 <div class="row mb-4">
     <div class="col">
         <div class="card">
-            <ProjectIssueCountBarChart projects=@projects Issues=@issues></ProjectIssueCountBarChart>
+            <ProjectIssueCountBarChart projects=@filteredProjects Issues=@issues></ProjectIssueCountBarChart>
         </div>
     </div>
     <div class="col">
         <div class="card">
-            <IssuesPieChart Issues=@issues piechartColours=@piechartColours></IssuesPieChart>
+            <IssuesPieChart Issues=@issues projects=@filteredProjects piechartColours=@piechartColours></IssuesPieChart>
         </div>
     </div>
 </div>
@@ -63,7 +63,7 @@
 <div class="row mb-4">
     <div class="col">
         <div class="card">
-            <TechDebtLineChart projects=@projects></TechDebtLineChart>
+            <TechDebtLineChart projects=@filteredProjects></TechDebtLineChart>
         </div>
     </div>
 </div>
@@ -71,6 +71,7 @@
 
 @code {
     private List<SonarQubeProject>? projects = new List<SonarQubeProject>();
+    private List<SonarQubeProject>? filteredProjects = new List<SonarQubeProject>();
     private List<PieChartColour> piechartColours = new List<PieChartColour>();
     private List<ProjectIssue> issues = new List<ProjectIssue>();
     private List<double> projectWeights = new List<double>();
@@ -104,6 +105,7 @@
             if (projects != null)
             {
                 projectWeights = (from project in projects select project.Weight).ToList();
+                filteredProjects = projects;
             }
         }
         catch (Exception)
@@ -180,5 +182,11 @@
             Console.WriteLine($"Error fetching colour settings: {ex.Message}");
             @* navigationManager.NavigateTo("/Error"); *@
         }
+    }
+
+    protected void HandleProjectFilterChanged(List<SonarQubeProject> filteredProjects)
+    {
+        this.filteredProjects = filteredProjects;
+        StateHasChanged();
     }
 }

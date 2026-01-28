@@ -9,11 +9,14 @@
     [Parameter]
     public List<ProjectIssue>? Issues { get; set; }
     [Parameter]
+    public List<SonarQubeProject>? projects { get; set; }
+    [Parameter]
     public List<PieChartColour>? piechartColours { get; set; }
     private PieChart pieChart = default!;
     private PieChartOptions pieChartOptions = default!;
     private BlazorExpress.ChartJS.ChartData chartData = default!;
     private List<ProjectIssue>? previousIssues = null;
+    private List<SonarQubeProject>? previousProjects = null;
     private bool chartInitialized = false;
 
     protected override void OnInitialized()
@@ -27,10 +30,13 @@
 
     protected override void OnParametersSet()
     {
-        // Only rebuild if Issues data actually changed
-        if (!ReferenceEquals(Issues, previousIssues))
+        // Only rebuild if Issues and Projects data actually changed
+        bool paramsChanged = !ReferenceEquals(Issues, previousIssues) || !ReferenceEquals(projects, previousProjects);
+
+        if (paramsChanged)
         {
             previousIssues = Issues;
+            previousProjects = projects;
             
             if (Issues != null && Issues.Any())
             {
@@ -90,10 +96,15 @@
     {
         var data = new List<double?>();
 
-        if (Issues != null)
+        if (Issues != null && projects != null)
         {
+            // Filter out issues that belongs to projects that are not in the projects list
+            Issues = Issues.Where(i => projects.Any(p => p.Id == i.SonarQubeProjectId)).ToList();
+
+            // Group issues by severity
             var groupedIssues = Issues.GroupBy(i => i.Severity).ToList();
 
+            // For each severity group, get the count of issues
             groupedIssues.ForEach(g =>
             {
                 data.Add(g.Count());
@@ -113,27 +124,6 @@
             groupedIssues.ForEach((g) =>
             {
                 AddColourToList(g.Key.ToLower(), colours);
-                @* switch(g.Key)
-                {
-                    case "BLOCKER":
-                        AddColourToList(g.Key.ToLower());
-                        break;
-                    case "CRITICAL":
-                        AddColourToList(g.Key.ToLower());
-                        break;
-                    case "MAJOR":
-                        AddColourToList(g.Key.ToLower());                       
-                        break;
-                    case "MINOR":
-                        AddColourToList(g.Key.ToLower());
-                        break;
-                    case "INFO":
-                        AddColourToList(g.Key.ToLower());
-                        break;
-                    default: 
-                        AddColourToList(g.Key.ToLower());
-                        break;
-                } *@
             });
         }
 

@@ -14,7 +14,6 @@ public class SonarQubeProject()
 
     public required DateTime LastAnalysisDate { get; set; }
 
-
     public double Weight { get; set; }
 
     public int NumOfDevelopers { get; set; }

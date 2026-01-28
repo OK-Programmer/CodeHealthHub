@@ -3,7 +3,7 @@
 <div class="card-body">
     <h5 class="card-title">
         Issues
-        <CardTooltip TooltipText="Test text"/>
+        <CardTooltip TooltipText="@tooltipText"/>
     </h5>
     <p class="card-text">
         Total Count: @issuesCount <br />
@@ -16,4 +16,5 @@
     public int? issuesCount { get; set; }
     [Parameter]
     public int? effortTotal { get; set; }
+    private string tooltipText = "This card displays the total number of issues detected across all projects and the cumulative effort required to resolve them, measured in minutes.";
 }

@@ -12,6 +12,7 @@
     [Parameter]
     public List<SonarQubeProject>? projects { get; set; }
     private List<ProjectIssue>? previousIssues = null;
+    private List<SonarQubeProject>? previousProjects = null;
     private BarChart barChart = default!;
     private BarChartOptions barChartOptions = default!;
     private BlazorExpress.ChartJS.ChartData chartData = default!;
@@ -35,10 +36,13 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        // Only rebuild if Issues data actually changed
-        if (!ReferenceEquals(Issues, previousIssues))
+        // Only rebuild if Issues and Projects data actually changed
+        bool paramsChanged = !ReferenceEquals(Issues, previousIssues) || !ReferenceEquals(projects, previousProjects);
+
+        if (paramsChanged)
         {
             previousIssues = Issues;
+            previousProjects = projects;
             
             if (Issues != null && Issues.Any())
             {
@@ -82,28 +86,19 @@
     protected List<double?> GetDataPoints()
     {
         List<double?> dataPoints = new();
-        if (Issues != null && Issues.Any())
+        if (Issues != null && Issues.Any() && projects != null && projects.Any())
         {
-            var labels = GetLabels()?? new List<string>();
-            foreach(var label in labels)
+            // Get count of Issues that belongs to each project in the projects list
+            foreach(var project in projects)
             {
-                var count = Issues.Count(i => 
-                    {
-                        var project = projects?.FirstOrDefault(p => p.Name == label);
-                        return project != null && i.Project == project.Key;
-                    });
+                var count = Issues.Count(i => i.SonarQubeProjectId == project.Id);
                 dataPoints.Add(count);
             }
-            @* var labels = Issues.Select(i => i.project).Distinct().ToList();
-            foreach(var label in labels)
-            {
-                var count = Issues.Count(i => i.project == label);
-                dataPoints.Add(count);
-            } *@
+
             return dataPoints;
         }
         else 
-        { 
+        {
             return new List<double?>();
         }
     }
@@ -112,8 +107,9 @@
     {
         if (Issues != null && Issues.Any())
         {
-            var projectKeys = (from issue in Issues select issue.Project).Distinct().ToList();
-            var projectNames = projects?.Where(p => projectKeys.Contains(p.Key)).Select(p => p.Name).ToList();
+            @* var projectKeys = (from issue in Issues select issue.Project).Distinct().ToList(); *@
+            @* var projectNames = projects?.Where(p => projectKeys.Contains(p.Key)).Select(p => p.Name).ToList(); *@
+            var projectNames = projects?.Select(p => p.Name).ToList();
             return projectNames;
         }
         else 

@@ -4,7 +4,7 @@
 <div class="card-body">
     <h5 class="card-title">
         Overall Health Score
-        <CardTooltip TooltipText="Test text"/>
+        <CardTooltip TooltipText="@tooltipText"/>
     </h5>
     <p class="card-text health-score" health-score="@overallHealthScore">@overallHealthScore</p>
 </div>
@@ -15,6 +15,7 @@
     [Parameter]
     public List<double> weights { get; set; } = new List<double>();
     private string? overallHealthScore;
+    private string tooltipText = "Overall Health Score is calculated based on the weighted average of individual project health scores. Each project's health score is determined by its ratings in Vulnerability, Bugs, Code Smells, and Security Hotspots.";
 
     public struct ProjectHealthScore
     {

@@ -5,7 +5,7 @@
 <div class="card-body">
     <h5 class="card-title">
         Top Vulnerable Projects
-        <CardTooltip TooltipText="Test text"/>
+        <CardTooltip TooltipText="@tooltipText"/>
     </h5>
     @if (topVulnProjects != null && topVulnProjects.Count() != 0)
     {
@@ -25,8 +25,8 @@
     public List<SonarQubeProject>? projects { get; set; }
     [Parameter]
     public List<ProjectIssue>? issues { get; set; }
-
     private List<ListItem> topVulnProjects = new();
+    private string tooltipText = "This card highlights the top three projects with the highest number of security vulnerabilities, categorized by severity levels such as Blocker, Critical, Major, and Minor.";
 
     class ListItem
     {
