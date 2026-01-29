@@ -52,8 +52,8 @@
     
     protected override async Task OnParametersSetAsync()
     {
-        if (projects == null || projects.Count == 0)
-            return;
+        @* if (projects == null || projects.Count == 0)
+            return; *@
 
         int currentHash = projects.GetHashCode();
         if (currentHash == _lastProjectHash)

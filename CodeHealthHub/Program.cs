@@ -1,3 +1,4 @@
+using Blazored.LocalStorage;
 using CodeHealthHub.Components;
 using CodeHealthHub.Data;
 using Microsoft.EntityFrameworkCore;
@@ -5,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddBlazoredLocalStorage();
+
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("AppDBContext") ?? throw new InvalidOperationException("Connection string 'AppDBContext' not found.")));
 
@@ -12,10 +15,12 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddControllers();  // Add this to enable API controllers
+
 builder.Services.AddHttpClient("LocalApi", client =>
 {
    client.BaseAddress = new Uri(builder.Configuration["AppSettings:BaseUrl"] ?? "http://localhost:5030/");
 });
+
 
 var app = builder.Build();
 

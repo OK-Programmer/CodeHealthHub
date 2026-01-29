@@ -1,4 +1,4 @@
-﻿@using CodeHealthHub.Models
+﻿@inject ILocalStorageService LocalStorage
 
 <div class="p-2">
     @if(showProjectsTable)
@@ -30,7 +30,7 @@
                 {
                     <p>Loading...</p>
                 }
-                else if (!projects.Any())
+                else if (!projects.Any() && projectFilters.Count == 0)
                 {
                     <p>No project data found.</p>
                 }
@@ -44,7 +44,7 @@
                             <td>@project.NumOfDevelopers.ToString()</td>
                             <td>@project.DeveloperCostPerHour.ToString()</td>
                             <td>@String.Format("{0:0.000}", project.Weight)</td>
-                            <td><input type="checkbox" @onclick="() => OnCheckboxChange(project.Name)" checked="@projectFilters[project.Name]"/></td>
+                            <td><input type="checkbox" @onclick="() => OnCheckboxChange(project.Name)" checked="@(projectFilters.ContainsKey(project.Name) ? projectFilters[project.Name] : true)"/></td>
                         </tr>
                     }
                 }
@@ -59,20 +59,32 @@
     public List<SonarQubeProject>? projects { get; set; }
     [Parameter]
     public EventCallback<List<SonarQubeProject>> OnProjectFilterChanged { get; set; }
-    private static Dictionary<string, bool> projectFilters = new Dictionary<string, bool>();
+    private Dictionary<string, bool> projectFilters = new Dictionary<string, bool>();
+    private List<SonarQubeProject>? previousProjects = new List<SonarQubeProject>();
     private bool showProjectsTable = true;
-    private static bool firstRender = true;
 
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (projects != null && firstRender)
+        if (projects != null && projects.Any())
         {
-            foreach (var project in projects)
+            foreach (var p in projects)
             {
-                projectFilters[project.Name] = true;
+                // Initialize project filter in local storage if not present
+                if (CheckProjFilterExistsInLocalStore(p.Name).Result == false)
+                {
+                    await LocalStorage.SetItemAsync($"projectFilters_{p.Name}", true);
+                }
+
+                // Load filter state from local storage
+                projectFilters[p.Name] = await LocalStorage.GetItemAsync<bool>($"projectFilters_{p.Name}");
             }
-            firstRender = false;
+            StateHasChanged();
         }
+    }
+
+    protected async Task<bool> CheckProjFilterExistsInLocalStore(string projectName)
+    {
+        return await LocalStorage.ContainKeyAsync($"projectFilters_{projectName}");
     }
 
     protected void ToggleProjectsTable()
@@ -80,13 +92,14 @@
         showProjectsTable = !showProjectsTable;
     }
 
-    protected async Task UpdateItems()
+    protected async Task UpdateProjects()
     {
         List<SonarQubeProject> filteredProjects = new List<SonarQubeProject>();
         if (projects != null)
         {
             foreach (var project in projects)
             {
+                // Check if project is selected in filters, and add to filtered list
                 if (projectFilters[project.Name])
                 {
                     filteredProjects.Add(project);
@@ -94,12 +107,14 @@
             }
         }
         await OnProjectFilterChanged.InvokeAsync(filteredProjects);
+        StateHasChanged();
     }
 
     protected async void OnCheckboxChange(string projectName)
     {
         projectFilters[projectName] = projectFilters[projectName] ? false : true;
-        await UpdateItems();
+        await LocalStorage.SetItemAsync($"projectFilters_{projectName}", projectFilters[projectName]);
+        await UpdateProjects();
     }
 
     @* protected string FormatDate(string input)
