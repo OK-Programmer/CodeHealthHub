@@ -1,7 +1,4 @@
-﻿@using CodeHealthHub.Models
-@using System.IO.Pipelines
-@using CodeHealthHub.Models.ViewModels
-@using System.Drawing
+﻿@using System.Drawing
 
 <PieChart Height=300 @ref="pieChart"></PieChart>
 
@@ -101,8 +98,8 @@
             // Filter out issues that belongs to projects that are not in the projects list
             Issues = Issues.Where(i => projects.Any(p => p.Id == i.SonarQubeProjectId)).ToList();
 
-            // Group issues by severity
-            var groupedIssues = Issues.GroupBy(i => i.Severity).ToList();
+            // Group issues by severity and sort for consistent ordering
+            var groupedIssues = Issues.GroupBy(i => i.Severity).OrderBy(g => g.Key).ToList();
 
             // For each severity group, get the count of issues
             groupedIssues.ForEach(g =>
@@ -120,7 +117,8 @@
 
         if (Issues != null)
         {
-            List<IGrouping<string, ProjectIssue>>? groupedIssues = Issues.GroupBy(i => i.Severity).ToList();
+            // Group issues by severity and sort for consistent ordering
+            List<IGrouping<string, ProjectIssue>>? groupedIssues = Issues.GroupBy(i => i.Severity).OrderBy(g => g.Key).ToList();
             groupedIssues.ForEach((g) =>
             {
                 AddColourToList(g.Key.ToLower(), colours);
@@ -136,7 +134,8 @@
         
         if (Issues != null)
         {
-            Issues.GroupBy(i => i.Severity).ToList().ForEach(g =>
+            // Group issues by severity and sort for consistent ordering
+            Issues.GroupBy(i => i.Severity).OrderBy(g => g.Key).ToList().ForEach(g =>
             {
                 labels.Add(g.Key);
             });

@@ -30,7 +30,7 @@
                 {
                     <p>Loading...</p>
                 }
-                else if (!projects.Any() && projectFilters.Count == 0)
+                else if (!projects.Any())
                 {
                     <p>No project data found.</p>
                 }
@@ -44,7 +44,13 @@
                             <td>@project.NumOfDevelopers.ToString()</td>
                             <td>@project.DeveloperCostPerHour.ToString()</td>
                             <td>@String.Format("{0:0.000}", project.Weight)</td>
-                            <td><input type="checkbox" @onclick="() => OnCheckboxChange(project.Name)" checked="@(projectFilters.ContainsKey(project.Name) ? projectFilters[project.Name] : true)"/></td>
+                            <td>
+                                <input 
+                                    type="checkbox" 
+                                    @onclick="async () => await OnCheckboxChange(project.Name)" 
+                                    checked="@(projectFilters.ContainsKey(project.Name) ? projectFilters[project.Name] : true)" 
+                                />
+                            </td>
                         </tr>
                     }
                 }
@@ -65,12 +71,15 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (projects != null && projects.Any())
+        if (!firstRender && projects != null && projects.Any() && !ReferenceEquals(projects, previousProjects))
         {
+            previousProjects = projects;
+            projectFilters.Clear();
+            
             foreach (var p in projects)
             {
                 // Initialize project filter in local storage if not present
-                if (CheckProjFilterExistsInLocalStore(p.Name).Result == false)
+                if (!await CheckProjFilterExistsInLocalStore(p.Name))
                 {
                     await LocalStorage.SetItemAsync($"projectFilters_{p.Name}", true);
                 }
@@ -78,13 +87,15 @@
                 // Load filter state from local storage
                 projectFilters[p.Name] = await LocalStorage.GetItemAsync<bool>($"projectFilters_{p.Name}");
             }
-            StateHasChanged();
+
+            await UpdateProjects();
         }
     }
 
     protected async Task<bool> CheckProjFilterExistsInLocalStore(string projectName)
     {
-        return await LocalStorage.ContainKeyAsync($"projectFilters_{projectName}");
+        bool exists = await LocalStorage.ContainKeyAsync($"projectFilters_{projectName}");
+        return exists;
     }
 
     protected void ToggleProjectsTable()
@@ -107,26 +118,12 @@
             }
         }
         await OnProjectFilterChanged.InvokeAsync(filteredProjects);
-        StateHasChanged();
     }
 
-    protected async void OnCheckboxChange(string projectName)
+    protected async Task OnCheckboxChange(string projectName)
     {
-        projectFilters[projectName] = projectFilters[projectName] ? false : true;
+        projectFilters[projectName] = projectFilters.ContainsKey(projectName) && projectFilters[projectName] ? false : true;
         await LocalStorage.SetItemAsync($"projectFilters_{projectName}", projectFilters[projectName]);
         await UpdateProjects();
     }
-
-    @* protected string FormatDate(string input)
-    {
-        var dto = DateTimeOffset.ParseExact(
-            input,
-            "yyyy-MM-dd'T'HH:mm:ssK",
-            System.Globalization.CultureInfo.InvariantCulture
-        );
-        TimeZoneInfo sgZone = TimeZoneInfo.FindSystemTimeZoneById("Singapore Standard Time");
-        DateTime sgTime = TimeZoneInfo.ConvertTime(dto.UtcDateTime, sgZone);
-        string formatted = sgTime.ToString("dd MMM yyyy HH:mm:ss");
-        return formatted;
-    } *@
 }
