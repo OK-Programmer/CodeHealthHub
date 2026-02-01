@@ -18,6 +18,13 @@ public class IssuesController(AppDbContext dbContext) : ControllerBase
 {
     private readonly AppDbContext _dbContext = dbContext;
 
+    [HttpGet("all")]
+    public async Task<ActionResult> GetIssuesData()
+    {
+        List<ProjectIssue>? allIssues = await _dbContext.ProjectIssues.ToListAsync();
+        return Ok(allIssues);
+    }
+
     [HttpGet("refresh")]
     public async Task<ActionResult> FetchAndUpdateIssues()
     {
@@ -94,7 +101,7 @@ public class IssuesController(AppDbContext dbContext) : ControllerBase
                     Debt = issue.Debt.Contains("min") ? int.Parse(issue.Debt[..^3]) : int.Parse(issue.Debt[..^1]) * 60, // Remove 'min' or 'h' suffix and convert to int
                     Type = issue.Type,
                     Status = issue.Status,
-                    CreationDate = issue.CreationDate,
+                    CreationDate = DateTime.Parse(issue.CreationDate),
                     SonarQubeProjectId = _dbContext.SonarQubeProjects
                         .Where(p => p.Key == issue.Project)
                         .Select(p => p.Id)

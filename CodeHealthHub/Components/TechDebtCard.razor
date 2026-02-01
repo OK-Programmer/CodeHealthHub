@@ -1,9 +1,9 @@
 ﻿@using CodeHealthHub.Models
 
 <div class="card-body">
+    <CardTooltip TooltipText="@tooltipText"/>
     <h5 class="card-title">
         Unified Tech Debt
-        <CardTooltip TooltipText="@tooltipText"/>
     </h5>
     <p class="card-text">
         @utd.ToString("0.0") hours<br />

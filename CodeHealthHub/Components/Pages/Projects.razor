@@ -22,7 +22,7 @@
                     @if (isEditing)
                     {
                         <button class="btn btn-success me-2" @onclick="() => SaveEdit()">Save</button>
-                        <button class="btn btn-secondary me-2" @onclick="CancelEdit">Cancel</button>
+                        <button class="btn btn-danger me-2" @onclick="CancelEdit">Cancel</button>
                     }
                     else
                     {
@@ -34,58 +34,56 @@
                 <table class="table w-100">
                     <thead>
                         <tr>
-                            @* <th>Project ID</th> *@
                             <th>Name</th>
                             <th>Key</th>
                             <th>Developer Count</th>
                             <th>Developer Cost/hr</th>
                             <th>Weight</th>
-                            <th>Actions</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
                         @for(int i = 0; i < projects.Count; i++)
                         {
-                        var rowIndex = i;
-                        var project = projects[rowIndex];
-                        var tempWeight = project.Weight.ToString();
-                        var tempNumOfDevs = project.NumOfDevelopers.ToString();
-                        var tempDevCost = project.DeveloperCostPerHour.ToString();
-                        <tr>
-                            @* <td>@project.Id</td> *@
-                            <td>@project.Name</td>
-                            <td>@project.Key</td>
-                            <td>
-                                @if (!isEditing) { @tempNumOfDevs }
-                                else { 
-                                    <InputText 
-                                    @bind-Value="tempNumOfDevs"
-                                    class="form-control form-control-sm" 
-                                    @oninput="e => { if (int.TryParse(e.Value?.ToString(), out int result)) { project.NumOfDevelopers = result; } }"/> 
-                                }
-                            </td>
-                            <td>
-                                @if (!isEditing) { @tempDevCost }
-                                else { 
-                                    <InputText 
-                                    @bind-Value="tempDevCost"
-                                    class="form-control form-control-sm" 
-                                    @oninput="e => { if (double.TryParse(e.Value?.ToString(), out double result)) { project.DeveloperCostPerHour = result; } }"/> 
-                                }
-                            </td>
-                            <td>
-                                @if (!isEditing) { @tempWeight }
-                                else { 
-                                    <InputText 
-                                    @bind-Value="tempWeight"
-                                    class="form-control form-control-sm" 
-                                    @oninput="e => {if (double.TryParse(e.Value?.ToString(), out double result)) { project.Weight = result; } }"/> 
-                                }
-                            </td>
-                            <td>
-                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteProject(project.Id)">Delete</button>
-                            </td>
-                        </tr>
+                            var rowIndex = i;
+                            var project = projects[rowIndex];
+                            var tempWeight = project.Weight.ToString("0.00");
+                            var tempNumOfDevs = project.NumOfDevelopers.ToString();
+                            var tempDevCost = project.DeveloperCostPerHour.ToString();
+                            <tr>
+                                <td>@project.Name</td>
+                                <td>@project.Key</td>
+                                <td class="text-center">
+                                    @if (!isEditing) { @tempNumOfDevs }
+                                    else { 
+                                        <InputText 
+                                        @bind-Value="tempNumOfDevs"
+                                        class="form-control form-control-sm" 
+                                        @oninput="e => { if (int.TryParse(e.Value?.ToString(), out int result)) { project.NumOfDevelopers = result; } }"/> 
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (!isEditing) { @tempDevCost }
+                                    else { 
+                                        <InputText 
+                                        @bind-Value="tempDevCost"
+                                        class="form-control form-control-sm" 
+                                        @oninput="e => { if (double.TryParse(e.Value?.ToString(), out double result)) { project.DeveloperCostPerHour = result; } }"/> 
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (!isEditing) { @tempWeight }
+                                    else { 
+                                        <InputText 
+                                        @bind-Value="tempWeight"
+                                        class="form-control form-control-sm" 
+                                        @oninput="e => {if (double.TryParse(e.Value?.ToString(), out double result)) { project.Weight = result; } }"/> 
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteProject(project.Id)">Delete</button>
+                                </td>
+                            </tr>
                         }
                     </tbody>
                 </table>

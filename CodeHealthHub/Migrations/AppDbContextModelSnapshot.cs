@@ -36,7 +36,7 @@ namespace CodeHealthHub.Migrations
 
                     b.HasIndex("ProjectScanId");
 
-                    b.ToTable("Measures");
+                    b.ToTable("Measures", (string)null);
                 });
 
             modelBuilder.Entity("CodeHealthHub.Models.PieChartColour", b =>
@@ -53,7 +53,7 @@ namespace CodeHealthHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PieChartColours");
+                    b.ToTable("PieChartColours", (string)null);
                 });
 
             modelBuilder.Entity("CodeHealthHub.Models.ProjectIssue", b =>
@@ -99,7 +99,7 @@ namespace CodeHealthHub.Migrations
 
                     b.HasIndex("SonarQubeProjectId");
 
-                    b.ToTable("ProjectIssues");
+                    b.ToTable("ProjectIssues", (string)null);
                 });
 
             modelBuilder.Entity("CodeHealthHub.Models.ProjectScan", b =>
@@ -118,7 +118,7 @@ namespace CodeHealthHub.Migrations
 
                     b.HasIndex("SonarQubeProjectId");
 
-                    b.ToTable("ProjectScans");
+                    b.ToTable("ProjectScans", (string)null);
                 });
 
             modelBuilder.Entity("CodeHealthHub.Models.SonarQubeInstance", b =>
@@ -144,7 +144,7 @@ namespace CodeHealthHub.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SonarQubeInstances");
+                    b.ToTable("SonarQubeInstances", (string)null);
                 });
 
             modelBuilder.Entity("CodeHealthHub.Models.SonarQubeProject", b =>
@@ -180,7 +180,7 @@ namespace CodeHealthHub.Migrations
 
                     b.HasIndex("SonarQubeInstanceId");
 
-                    b.ToTable("SonarQubeProjects");
+                    b.ToTable("SonarQubeProjects", (string)null);
                 });
 
             modelBuilder.Entity("CodeHealthHub.Models.Measure", b =>

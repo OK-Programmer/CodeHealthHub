@@ -83,7 +83,6 @@
             await GetIssues();
             await GetMeasures();
             await GetPiechartColours();
-            StateHasChanged(); 
         }
         catch (Exception e)
         {
@@ -184,6 +183,5 @@
     protected void HandleProjectFilterChanged(List<SonarQubeProject> filteredProjects)
     {
         this.filteredProjects = filteredProjects;
-        StateHasChanged();
     }
 }

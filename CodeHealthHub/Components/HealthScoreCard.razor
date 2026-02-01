@@ -2,9 +2,9 @@
 @inject IJSRuntime JS
 
 <div class="card-body">
+    <CardTooltip TooltipText="@tooltipText"/>
     <h5 class="card-title">
         Overall Health Score
-        <CardTooltip TooltipText="@tooltipText"/>
     </h5>
     <p class="card-text health-score" health-score="@overallHealthScore">@overallHealthScore</p>
 </div>

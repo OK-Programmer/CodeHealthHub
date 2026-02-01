@@ -3,9 +3,9 @@
 @using Microsoft.AspNetCore.Components.QuickGrid
 
 <div class="card-body">
+    <CardTooltip TooltipText="@tooltipText"/>
     <h5 class="card-title">
         Top Vulnerable Projects
-        <CardTooltip TooltipText="@tooltipText"/>
     </h5>
     @if (topVulnProjects != null && topVulnProjects.Count() != 0)
     {

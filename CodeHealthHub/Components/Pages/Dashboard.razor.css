@@ -7,6 +7,10 @@
     box-shadow: 2px 2px 5px gray;
 }
 
+::deep .card-title {
+    font-size: 1.5rem;
+}
+
 ::deep .card-text {
     font-size: 1.25em;
 }

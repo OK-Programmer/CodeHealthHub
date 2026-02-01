@@ -1,42 +1,59 @@
 ﻿@page "/issues"
-@using CodeHealthHub.Models
-@using CodeHealthHub.Models.ViewModels
-@using CodeHealthHub.Models.JsonTypes
 @using System.Net.Http.Json
+@using SQLitePCL
 @rendermode InteractiveServer
 @inject IHttpClientFactory HttpFactory
 @inject NavigationManager navigationManager
-@inject IJSRuntime JSRuntime
+@inject IJSRuntime JSRuntime 
 
-
-<PageTitle>Issues</PageTitle>
+<PageTitle>View issues</PageTitle>
 
 <div class="mb-4">
-    <h1>Issues</h1>
-    <p>This is the issues page. Here you can view all issues found for all projects.</p>
+    <h1>View Issues</h1>
+    <p>This is the issues page. Here you can view all issues found for all projects. Click on column headers to sort, and the magnifying glass icon to search by filters.</p>
     <hr />
 </div>
 
-<div class="row d-flex justify-content-center">
-    <div class="col-10">
+<div class="row mb-4 d-flex justify-content-center">
+    <div class="col-12">
         <div class="card">
             <div class="card-body p-6">
-                <div class="col text-end mb-3">
+                <div class="d-flex align-items-center justify-content-between mx-2">
+                    <div class="page-size-chooser">
+                        Items per page:
+                        <select @bind="@pagination.ItemsPerPage">
+                            <option>10</option>
+                            <option>20</option>
+                            <option>50</option>
+                        </select>
+                    </div>
                     <button type="button" class="btn btn-outline-dark me-2" @onclick="RefreshIssues">Refresh Issues Data</button>
                 </div>
 
-                <table class="table w-100">
-                    <thead>
-                        <tr>
-                            
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <td>
-                            
-                        </td>
-                    </tbody>
-                </table>
+                <QuickGrid Items="@filteredIssues" Pagination="@pagination" class="w-100 mt-3">
+                    <PropertyColumn Property="@(p => p.IssueKey)" Title="Issue Key"/>
+                    <PropertyColumn Property="@(p => p.Severity)" Sortable="true" />
+                    <PropertyColumn Property="@(p => p.Project)" Sortable="true">
+                        <ColumnOptions>
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-search pe-2"></i>
+                                <input type="search" autofocus @bind="nameFilter" @bind:event="oninput" placeholder="Project name..." />
+                            </div>
+                        </ColumnOptions>
+                    </PropertyColumn>
+                    <PropertyColumn Property="@(p => p.Effort)" Sortable="true" />
+                    <PropertyColumn Property="@(p => p.Type)" Sortable="true">
+                        <ColumnOptions>
+                            @foreach (var type in types!)
+                            {
+                                <div><input type="checkbox" @onclick="() => HandleTypeFilter(type)" checked="@filteredTypes.Contains(type)"/> @type</div>
+                            }
+                        </ColumnOptions>
+                    </PropertyColumn>
+                    <PropertyColumn Property="@(p => p.CreationDate)" Format="dd/MM/yyyy" Sortable="true" Title="Creation Date"/>
+                </QuickGrid>
+
+                <Paginator State="@pagination" />
             </div>
         </div>
     </div>
@@ -44,13 +61,51 @@
 
 @code {
     public required HttpClient _httpClient;
-    public List<ProjectIssue>? issues { get; set; }
+    private string? nameFilter;
+    private bool typeFilterChanged = false;
+    private PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+    private IQueryable<ProjectIssue>? issues { get; set; }
+    private List<string>? types
+    {
+        get
+        {
+            var result = issues?.Select(i => i.Type).Distinct().ToList();
+            return result;
+        }
+    }
+    private List<string> filteredTypes;
+    private IQueryable<ProjectIssue>? filteredIssues
+    {
+        get
+        {
+            var result = issues;
 
-    protected override void OnInitialized()
+            if (!string.IsNullOrEmpty(nameFilter) && result != null)
+            {
+                result = result.Where(i => i.Project.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase));
+            }
+
+            if (typeFilterChanged)
+            {
+                result = result.Where(i => filteredTypes.Contains(i.Type));
+                typeFilterChanged = false;
+            }
+
+            return result;
+        }
+    }
+
+
+    protected override async Task OnInitializedAsync()
     {
         _httpClient = HttpFactory.CreateClient("LocalApi");
 
-
+        var response = await _httpClient.GetFromJsonAsync<List<ProjectIssue>>("api/issues/all");
+        if (response != null && response.Count != 0)
+        {
+            issues = response.AsQueryable();
+            filteredTypes = issues.Select(i => i.Type).Distinct().ToList();
+        }
     }
 
     protected async Task RefreshIssues()
@@ -75,5 +130,18 @@
             Debug.WriteLine("Exception when calling RefreshProjects(): " + e);
             navigationManager.NavigateTo("/Error");
         }
+    }
+
+    protected void HandleTypeFilter(string type)
+    {
+        if (filteredTypes.Contains(type)) 
+        {
+            filteredTypes.Remove(type);
+        }
+        else 
+        {
+            filteredTypes.Add(type);
+        }
+        typeFilterChanged = true;
     }
 }
