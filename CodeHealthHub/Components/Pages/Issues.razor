@@ -1,5 +1,6 @@
 ﻿@page "/issues"
 @using System.Net.Http.Json
+@using Microsoft.AspNetCore.Server.Kestrel.Core.Features
 @using SQLitePCL
 @rendermode InteractiveServer
 @inject IHttpClientFactory HttpFactory
@@ -31,8 +32,20 @@
                 </div>
 
                 <QuickGrid Items="@filteredIssues" Pagination="@pagination" class="w-100 mt-3">
-                    <PropertyColumn Property="@(p => p.IssueKey)" Title="Issue Key"/>
-                    <PropertyColumn Property="@(p => p.Severity)" Sortable="true" />
+                    @* <PropertyColumn Property="@(p => p.IssueKey)" Title="Issue Key" /> *@
+                    <TemplateColumn Title="Issue Key">
+                        <a href="@(issueLinks.ContainsKey(context.IssueKey) ? issueLinks[context.IssueKey] : "#")">
+                            @context.IssueKey
+                        </a>
+                    </TemplateColumn>
+                    <PropertyColumn Property="@(p => p.Severity)" Sortable="true">
+                        <ColumnOptions>
+                            @foreach (var severity in severities!)
+                            {
+                                <div><input type="checkbox" @onclick="() => HandleSeverityFilter(severity)" checked="@filteredSeverities?.Contains(severity)"/> @severity</div>
+                            }
+                        </ColumnOptions>
+                    </PropertyColumn>
                     <PropertyColumn Property="@(p => p.Project)" Sortable="true">
                         <ColumnOptions>
                             <div class="d-flex align-items-center">
@@ -46,11 +59,11 @@
                         <ColumnOptions>
                             @foreach (var type in types!)
                             {
-                                <div><input type="checkbox" @onclick="() => HandleTypeFilter(type)" checked="@filteredTypes.Contains(type)"/> @type</div>
+                                <div><input type="checkbox" @onclick="() => HandleTypeFilter(type)" checked="@filteredTypes?.Contains(type)"/> @type</div>
                             }
                         </ColumnOptions>
                     </PropertyColumn>
-                    <PropertyColumn Property="@(p => p.CreationDate)" Format="dd/MM/yyyy" Sortable="true" Title="Creation Date"/>
+                    <PropertyColumn Property="@(p => p.CreationDate)" Format="yyyy-MM-dd HH:mm:ss" Sortable="true" Title="Creation Date"/>
                 </QuickGrid>
 
                 <Paginator State="@pagination" />
@@ -62,9 +75,8 @@
 @code {
     public required HttpClient _httpClient;
     private string? nameFilter;
-    private bool typeFilterChanged = false;
+    private bool typeFilterChanged = false, severityFilterChanged = false;
     private PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
-    private IQueryable<ProjectIssue>? issues { get; set; }
     private List<string>? types
     {
         get
@@ -73,7 +85,17 @@
             return result;
         }
     }
-    private List<string> filteredTypes;
+    private List<string>? filteredTypes;
+    private List<string>? severities
+    {
+        get
+        {
+            var result = issues?.Select(i => i.Severity).Distinct().ToList();
+            return result;
+        }
+    }
+    private List<string>? filteredSeverities;
+    private IQueryable<ProjectIssue>? issues { get; set; }
     private IQueryable<ProjectIssue>? filteredIssues
     {
         get
@@ -85,16 +107,22 @@
                 result = result.Where(i => i.Project.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase));
             }
 
-            if (typeFilterChanged)
+            if (typeFilterChanged && result != null)
             {
-                result = result.Where(i => filteredTypes.Contains(i.Type));
+                result = result.Where(i => filteredTypes!.Contains(i.Type));
                 typeFilterChanged = false;
+            }
+
+            if (severityFilterChanged && result != null)
+            {
+                result = result.Where(i => filteredSeverities!.Contains(i.Severity));
+                severityFilterChanged = false;
             }
 
             return result;
         }
     }
-
+    private Dictionary<string, string> issueLinks { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -105,6 +133,13 @@
         {
             issues = response.AsQueryable();
             filteredTypes = issues.Select(i => i.Type).Distinct().ToList();
+            filteredSeverities = issues.Select(i => i.Severity).Distinct().ToList();
+            
+            for (int i = 0; i < issues.Count(); i++)
+            {
+                var issue = issues.ElementAt(i);
+                issueLinks[issue.IssueKey] = await GetIssueLink(issue);
+            }
         }
     }
 
@@ -132,9 +167,22 @@
         }
     }
 
+    protected void HandleSeverityFilter(string severity)
+    {
+        if (filteredSeverities!.Contains(severity)) 
+        {
+            filteredSeverities.Remove(severity);
+        }
+        else 
+        {
+            filteredSeverities.Add(severity);
+        }
+        severityFilterChanged = true;
+    }
+
     protected void HandleTypeFilter(string type)
     {
-        if (filteredTypes.Contains(type)) 
+        if (filteredTypes!.Contains(type)) 
         {
             filteredTypes.Remove(type);
         }
@@ -143,5 +191,31 @@
             filteredTypes.Add(type);
         }
         typeFilterChanged = true;
+    }
+
+    private int prevProjId = 0;
+    private string prevUrl = "";
+    public class IssueLinkResponse
+    {
+        public string Url { get; set; } = "";
+    }
+    protected async Task<string> GetIssueLink(ProjectIssue issue)
+    {
+        // Always use the same path and handle nulls
+        if (prevProjId != issue.SonarQubeProjectId)
+        {
+            prevProjId = issue.SonarQubeProjectId;
+            var response = await _httpClient.GetFromJsonAsync<IssueLinkResponse>($"/api/issues/issue-link?projectId={issue.SonarQubeProjectId}");
+            if (response != null && !string.IsNullOrWhiteSpace(response.Url))
+            {
+                prevUrl = response.Url;
+                return response.Url + $"/issues?open={issue.IssueKey}";
+            }
+            return "#";
+        }
+        else
+        {
+            return prevUrl + $"/issues?open={issue.IssueKey}";
+        }
     }
 }

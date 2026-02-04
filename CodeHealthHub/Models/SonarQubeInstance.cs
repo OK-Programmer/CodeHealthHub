@@ -1,6 +1,3 @@
-using System;
-using System.ComponentModel.DataAnnotations.Schema;
-
 namespace CodeHealthHub.Models;
 
 public class SonarQubeInstance()

@@ -21,8 +21,29 @@ public class IssuesController(AppDbContext dbContext) : ControllerBase
     [HttpGet("all")]
     public async Task<ActionResult> GetIssuesData()
     {
-        List<ProjectIssue>? allIssues = await _dbContext.ProjectIssues.ToListAsync();
+        List<ProjectIssue>? allIssues = await _dbContext.ProjectIssues.Include(issue => issue.SonarQubeProject!.SonarQubeInstance).ToListAsync();
         return Ok(allIssues);
+    }
+
+    [HttpGet("issue-link")]
+    public async Task<ActionResult> GetIssueInstanceURL(int projectId)
+    {
+        SonarQubeProject? project = await _dbContext.SonarQubeProjects
+            .Include(p => p.SonarQubeInstance)
+            .FirstOrDefaultAsync(p => p.Id == projectId);
+        if (project != null)
+        {
+            var instance = project.SonarQubeInstance;
+            var scheme = instance.Scheme;
+            var host = instance.Host;
+            var port = instance.Port;
+            var link = $"{scheme}://{host}:{port}";
+            return Ok(new { url = link });
+        }
+        else
+        {
+            return NotFound();
+        }
     }
 
     [HttpGet("refresh")]
