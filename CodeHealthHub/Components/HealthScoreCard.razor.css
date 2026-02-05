@@ -1,39 +1,29 @@
 .health-score {
     -webkit-text-stroke: 2px black;
+    font-size: 4rem;
+    font-weight: bold;
 }
 
 p[health-score="A"] {
-    color: #4CAF50; /* Green */
-    font-size: 2.5rem;
-    font-weight: bold;
+    color: #39db3e; /* Green */
 }
 
 p[health-score="B"] {
     color: #d5ff1c; /* Yellow */
-    font-size: 2.5rem;
-    font-weight: bold;
 }
 
 p[health-score="C"] {
     color: #ff9800; /* Orange */
-    font-size: 2.5rem;
-    font-weight: bold;
 }
 
 p[health-score="D"] {
     color: #f44336; /* Red */
-    font-size: 2.5rem;
-    font-weight: bold;
 }
 
 p[health-score="E"] {
     color: #790000; /* Dark Red */
-    font-size: 2.5rem;
-    font-weight: bold;
 }
 
 p[health-score="N/A"] {
-    color: #ffffff; /* Dark Red */
-    font-size: 2.5rem;
-    font-weight: bold;
+    color: #ffffff; /* White */
 }

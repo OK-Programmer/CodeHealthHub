@@ -31,42 +31,53 @@
                     <button type="button" class="btn btn-outline-dark me-2" @onclick="RefreshIssues">Refresh Issues Data</button>
                 </div>
 
-                <QuickGrid Items="@filteredIssues" Pagination="@pagination" class="w-100 mt-3">
-                    @* <PropertyColumn Property="@(p => p.IssueKey)" Title="Issue Key" /> *@
-                    <TemplateColumn Title="Issue Key">
-                        <a href="@(issueLinks.ContainsKey(context.IssueKey) ? issueLinks[context.IssueKey] : "#")">
-                            @context.IssueKey
-                        </a>
-                    </TemplateColumn>
-                    <PropertyColumn Property="@(p => p.Severity)" Sortable="true">
-                        <ColumnOptions>
-                            @foreach (var severity in severities!)
-                            {
-                                <div><input type="checkbox" @onclick="() => HandleSeverityFilter(severity)" checked="@filteredSeverities?.Contains(severity)"/> @severity</div>
-                            }
-                        </ColumnOptions>
-                    </PropertyColumn>
-                    <PropertyColumn Property="@(p => p.Project)" Sortable="true">
-                        <ColumnOptions>
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-search pe-2"></i>
-                                <input type="search" autofocus @bind="nameFilter" @bind:event="oninput" placeholder="Project name..." />
-                            </div>
-                        </ColumnOptions>
-                    </PropertyColumn>
-                    <PropertyColumn Property="@(p => p.Effort)" Sortable="true" />
-                    <PropertyColumn Property="@(p => p.Type)" Sortable="true">
-                        <ColumnOptions>
-                            @foreach (var type in types!)
-                            {
-                                <div><input type="checkbox" @onclick="() => HandleTypeFilter(type)" checked="@filteredTypes?.Contains(type)"/> @type</div>
-                            }
-                        </ColumnOptions>
-                    </PropertyColumn>
-                    <PropertyColumn Property="@(p => p.CreationDate)" Format="yyyy-MM-dd HH:mm:ss" Sortable="true" Title="Creation Date"/>
-                </QuickGrid>
+                @if (filteredIssues == null)
+                {
+                    <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <QuickGrid Items="@filteredIssues" Pagination="@pagination" class="w-100 mt-3">
+                        @* <PropertyColumn Property="@(p => p.IssueKey)" Title="Issue Key" /> *@
+                        <TemplateColumn Title="Issue Key">
+                            <a href="@(issueLinks.ContainsKey(context.IssueKey) ? issueLinks[context.IssueKey] : "#")" target="_blank" rel="noopener noreferrer">
+                                @context.IssueKey
+                            </a>
+                        </TemplateColumn>
+                        <PropertyColumn Property="@(p => p.Severity)" Sortable="true">
+                            <ColumnOptions>
+                                @foreach (var severity in severities!)
+                                {
+                                    <div><input type="checkbox" @onclick="() => HandleSeverityFilter(severity)" checked="@filteredSeverities?.Contains(severity)"/> @severity</div>
+                                }
+                            </ColumnOptions>
+                        </PropertyColumn>
+                        <PropertyColumn Property="@(p => p.Project)" Sortable="true">
+                            <ColumnOptions>
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-search pe-2"></i>
+                                    <input type="search" autofocus @bind="nameFilter" @bind:event="oninput" placeholder="Project name..." />
+                                </div>
+                            </ColumnOptions>
+                        </PropertyColumn>
+                        <PropertyColumn Property="@(p => p.Effort)" Sortable="true" />
+                        <PropertyColumn Property="@(p => p.Type)" Sortable="true">
+                            <ColumnOptions>
+                                @foreach (var type in types!)
+                                {
+                                    <div><input type="checkbox" @onclick="() => HandleTypeFilter(type)" checked="@filteredTypes?.Contains(type)"/> @type</div>
+                                }
+                            </ColumnOptions>
+                        </PropertyColumn>
+                        <PropertyColumn Property="@(p => p.CreationDate)" Format="yyyy-MM-dd HH:mm:ss" Sortable="true" Title="Creation Date"/>
+                    </QuickGrid>
 
-                <Paginator State="@pagination" />
+                    <Paginator State="@pagination" />
+                }
             </div>
         </div>
     </div>

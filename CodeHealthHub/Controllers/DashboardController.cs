@@ -65,72 +65,10 @@ public class DashboardController(AppDbContext dbContext) : ControllerBase
         }
     }
 
-    // [HttpGet("issues")]
-    // public async Task<ActionResult<List<Issue>>> GetIssues() 
-    // {
-    //     Dictionary<int, UriBuilder>? instanceBuilders = Utility.GetAllInstancesURIBuilders(_dbContext);
-    //     if (instanceBuilders == null)
-    //     {
-    //         Debug.WriteLine("GetIssues() could not find any SonarQubeInstances");
-    //         return NotFound("GetIssues() could not find any SonarQubeInstances");
-    //     }
-
-    //     IssueSearchResponse response = new();
-    //     int pageNumber = 1;
-
-    //     foreach (int Id in instanceBuilders.Keys)
-    //     {
-    //         UriBuilder builder = instanceBuilders[Id];
-    //         builder.Path = "/api/issues/search";
-
-    //         do
-    //         {
-    //             builder.Query = $"p={pageNumber}&ps=500";
-    //             Uri? url = builder.Uri;
-    //             HttpRequestMessage? request = new(HttpMethod.Get, url);
-    //             string? responseContent = await Utility.MakeRequest(request);
-    //             if (responseContent == null) 
-    //             { 
-    //                 Debug.WriteLine("GetIssues(): Empty response from request");
-    //                 return NotFound(); 
-    //             }
-
-    //             IssueSearchResponse? currentResponse = JsonConvert.DeserializeObject<IssueSearchResponse>(responseContent);
-    //             if (currentResponse == null)
-    //             {
-    //                 Debug.WriteLine("GetIssues(): No issues found in response");
-    //                 return NotFound();
-    //             }
-    //             else
-    //             {
-    //                 if (pageNumber == 1)
-    //                 {
-    //                     response = currentResponse;
-    //                 }
-    //                 else
-    //                 {
-    //                     response!.Issues.AddRange(currentResponse.Issues);
-    //                 }
-
-    //                 pageNumber++;
-    //             }
-    //         } while (response != null && response.Issues.Count < response.Total);
-    //     }
-
-    //     if (response != null)
-    //     {
-    //         return Ok(response);
-    //     }
-    //     else
-    //     {
-    //         return NotFound();
-    //     }
-    // }
-
     [HttpGet("issues")]
     public async Task<ActionResult<List<ProjectIssue>>> GetIssues()
     {
-        List<ProjectIssue> projectIssues = await _dbContext.ProjectIssues.ToListAsync();
+        List<ProjectIssue> projectIssues = await _dbContext.ProjectIssues.Where(i => i.Status == "OPEN").ToListAsync();
         
         return Ok(projectIssues);
     }

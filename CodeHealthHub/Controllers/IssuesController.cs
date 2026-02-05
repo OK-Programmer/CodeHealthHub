@@ -21,7 +21,10 @@ public class IssuesController(AppDbContext dbContext) : ControllerBase
     [HttpGet("all")]
     public async Task<ActionResult> GetIssuesData()
     {
-        List<ProjectIssue>? allIssues = await _dbContext.ProjectIssues.Include(issue => issue.SonarQubeProject!.SonarQubeInstance).ToListAsync();
+        List<ProjectIssue>? allIssues = await _dbContext.ProjectIssues
+            .Include(i => i.SonarQubeProject!.SonarQubeInstance)
+            .Where(i => i.Status == "OPEN")
+            .ToListAsync();
         return Ok(allIssues);
     }
 
