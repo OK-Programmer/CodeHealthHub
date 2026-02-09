@@ -30,6 +30,14 @@
                     </div>
                     <button type="button" class="btn btn-outline-dark me-2" @onclick="RefreshIssues">Refresh Issues Data</button>
                 </div>
+                @if (isRefreshing)
+                {
+                    <div class="d-flex justify-content-center align-items-center" style="height: 100px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
 
                 @if (filteredIssues == null)
                 {
@@ -86,7 +94,6 @@
 @code {
     public required HttpClient _httpClient;
     private string? nameFilter;
-    private bool typeFilterChanged = false, severityFilterChanged = false;
     private PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
     private List<string>? types
     {
@@ -102,6 +109,7 @@
         get
         {
             var result = issues?.Select(i => i.Severity).Distinct().ToList();
+            if (result != null) result.Sort();
             return result;
         }
     }
@@ -113,21 +121,22 @@
         {
             var result = issues;
 
-            if (!string.IsNullOrEmpty(nameFilter) && result != null)
+            if (result == null)
+                return null;
+
+            if (!string.IsNullOrEmpty(nameFilter))
             {
                 result = result.Where(i => i.Project.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase));
             }
 
-            if (typeFilterChanged && result != null)
+            if (filteredTypes != null && filteredTypes.Any() && filteredTypes.Count != types?.Count)
             {
-                result = result.Where(i => filteredTypes!.Contains(i.Type));
-                typeFilterChanged = false;
+                result = result.Where(i => filteredTypes.Contains(i.Type));
             }
 
-            if (severityFilterChanged && result != null)
+            if (filteredSeverities != null && filteredSeverities.Any() && filteredSeverities.Count != severities?.Count)
             {
-                result = result.Where(i => filteredSeverities!.Contains(i.Severity));
-                severityFilterChanged = false;
+                result = result.Where(i => filteredSeverities.Contains(i.Severity));
             }
 
             return result;
@@ -154,13 +163,16 @@
         }
     }
 
+    private bool isRefreshing = false;
     protected async Task RefreshIssues()
     {
+        isRefreshing = true;
         try
         {
             string requestUri = "api/issues/refresh";
             Debug.WriteLine($"Calling URL: {_httpClient.BaseAddress}{requestUri}");
             HttpResponseMessage response = await _httpClient.GetAsync(requestUri);
+            isRefreshing = false;
             if (response.IsSuccessStatusCode)
             {
                 navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
@@ -173,6 +185,7 @@
         }
         catch (Exception e)
         {
+            isRefreshing = false;
             Debug.WriteLine("Exception when calling RefreshProjects(): " + e);
             navigationManager.NavigateTo("/Error");
         }
@@ -188,7 +201,6 @@
         {
             filteredSeverities.Add(severity);
         }
-        severityFilterChanged = true;
     }
 
     protected void HandleTypeFilter(string type)
@@ -201,7 +213,6 @@
         {
             filteredTypes.Add(type);
         }
-        typeFilterChanged = true;
     }
 
     private int prevProjId = 0;

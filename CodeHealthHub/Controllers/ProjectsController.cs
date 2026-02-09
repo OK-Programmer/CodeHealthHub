@@ -162,11 +162,12 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         // Fetch: Call project search API for each SonarQube instance to get all projects from sonarqube
         foreach (int Id in instanceBuilders.Keys)
         {
+            string authToken = Utility.GetInstanceAuthTokenWithInstId(_dbContext, Id);
             UriBuilder builder = instanceBuilders[Id];
             builder.Path = "/api/projects/search";
             Uri? uri = builder.Uri;
             HttpRequestMessage request = new(HttpMethod.Get, uri);
-            string? response = await Utility.MakeRequest(request);
+            string? response = await Utility.MakeRequest(request, authToken);
             if (response == null) 
             {
                 Debug.WriteLine("FetchAndUpdateProjects(): No response from project search API");
@@ -266,71 +267,72 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         return NoContent();
     }
 
-    protected async Task FetchAndUpdateMeasures(SonarQubeProject project)                                                                                                                                     
-    {
-        UriBuilder builder = Utility.GetInstanceUriBuilder(_dbContext, project.Id);
+    // protected async Task FetchAndUpdateMeasures(SonarQubeProject project)                                                                                                                                     
+    // {
+    //     UriBuilder builder = Utility.GetInstanceUriBuilder(_dbContext, project.Id);
 
-        // Initialize new ProjectScan instance and get measures for this scan
-        ProjectScan? projectScan = await GetMeasures(builder, project);
+    //     // Initialize new ProjectScan instance and get measures for this scan
+    //     ProjectScan? projectScan = await GetMeasures(builder, project);
 
-        if (projectScan == null) 
-        { 
-            Debug.WriteLine($"FetchAndUpdateMeasures(): No measures found for project {project.Key}"); 
-            return;
-        }
-        else 
-        {
-            // Add ProjectScan record if it does not already exist
-            bool existingPS = await _dbContext.ProjectScans.AnyAsync(p => p.Id == projectScan.Id);
-            if (!existingPS)
-            {
-                _dbContext.ProjectScans.Add(projectScan); 
-            }
-            await _dbContext.SaveChangesAsync();
-            return;
-        }
-    }
+    //     if (projectScan == null) 
+    //     { 
+    //         Debug.WriteLine($"FetchAndUpdateMeasures(): No measures found for project {project.Key}"); 
+    //         return;
+    //     }
+    //     else 
+    //     {
+    //         // Add ProjectScan record if it does not already exist
+    //         bool existingPS = await _dbContext.ProjectScans.AnyAsync(p => p.Id == projectScan.Id);
+    //         if (!existingPS)
+    //         {
+    //             _dbContext.ProjectScans.Add(projectScan); 
+    //         }
+    //         await _dbContext.SaveChangesAsync();
+    //         return;
+    //     }
+    // }
 
-    protected async Task<ProjectScan?> GetMeasures(UriBuilder uriBuilder, SonarQubeProject project) 
-    {
-        uriBuilder.Path = "/api/measures/component";
-        uriBuilder.Query = $"metricKeys={string.Join(",",metricKeys.ToArray())}&component={project.Key}";
-        Uri? uri = uriBuilder.Uri;
+    // protected async Task<ProjectScan?> GetMeasures(UriBuilder uriBuilder, SonarQubeProject project) 
+    // {
+    //     uriBuilder.Path = "/api/measures/component";
+    //     uriBuilder.Query = $"metricKeys={string.Join(",",metricKeys.ToArray())}&component={project.Key}";
+    //     Uri? uri = uriBuilder.Uri;
 
-        HttpRequestMessage? request = new(HttpMethod.Get, uri);
-        string? response = await Utility.MakeRequest(request);
+    //     HttpRequestMessage? request = new(HttpMethod.Get, uri);
+    //     string? response = await Utility.MakeRequest(request);
         
-        ProjectScan? projScan;
-        if (response == null)
-        {
-            Debug.WriteLine("GetMeasures(): Null response from request");
-            return null;
-        }
-        else
-        {
-            // This deserialization will only populate the Measures property of ProjectScan variable
-            projScan = JsonConvert.DeserializeObject<MeasureSearchResponse>(response)!.Component;
-        }
+    //     ProjectScan? projScan;
+    //     if (response == null)
+    //     {
+    //         Debug.WriteLine("GetMeasures(): Null response from request");
+    //         return null;
+    //     }
+    //     else
+    //     {
+    //         // This deserialization will only populate the Measures property of ProjectScan variable
+    //         projScan = JsonConvert.DeserializeObject<MeasureSearchResponse>(response)!.Component;
+    //     }
 
-        if (projScan == null)
-        {
-            Debug.WriteLine("GetMeasures(): No measures found in response");
-            return null;
-        }
-        else
-        {
-            // Set rest of ProjectScan variable's properties
-            projScan.SonarQubeProjectId = project.Id;
-            projScan.AnalysisDate = project.LastAnalysisDate;
-            return projScan;
-        }
-    }
+    //     if (projScan == null)
+    //     {
+    //         Debug.WriteLine("GetMeasures(): No measures found in response");
+    //         return null;
+    //     }
+    //     else
+    //     {
+    //         // Set rest of ProjectScan variable's properties
+    //         projScan.SonarQubeProjectId = project.Id;
+    //         projScan.AnalysisDate = project.LastAnalysisDate;
+    //         return projScan;
+    //     }
+    // }
 
     protected async Task FetchAndUpdateMeasuresHistory(SonarQubeProject project, DateTime from, DateTime to)
     {
         UriBuilder builder = Utility.GetInstanceUriBuilder(_dbContext, project.Id);
+        string authToken = Utility.GetInstanceAuthTokenWithProjId(_dbContext, project.Id);
 
-        List<MeasureHistory>? measureHistList = await GetMeasuresHistory(builder, project, from, to);
+        List<MeasureHistory>? measureHistList = await GetMeasuresHistory(builder, authToken, project, from, to);
 
         if (measureHistList != null)
         {
@@ -342,7 +344,7 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         }
     }
 
-    protected async Task<List<MeasureHistory>?> GetMeasuresHistory(UriBuilder uriBuilder, SonarQubeProject project, DateTime from, DateTime to)
+    protected async Task<List<MeasureHistory>?> GetMeasuresHistory(UriBuilder uriBuilder, string authToken, SonarQubeProject project, DateTime from, DateTime to)
     {
         string format = "yyyy-MM-dd";
         uriBuilder.Path = "/api/measures/search_history";
@@ -352,7 +354,7 @@ public class ProjectsController(AppDbContext dbContext) : ControllerBase
         Debug.WriteLine($"GetMeasuresHistory() URI: {uri}");
 
         HttpRequestMessage? request = new(HttpMethod.Get, uri);
-        string? response = await Utility.MakeRequest(request);
+        string? response = await Utility.MakeRequest(request, authToken);
 
         List<MeasureHistory>? measureHistList;
         if (response == null)

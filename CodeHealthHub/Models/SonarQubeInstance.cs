@@ -11,6 +11,8 @@ public class SonarQubeInstance()
     public string Host { get; set; } = "";
 
     public int Port { get; set; } = 0;
+
+    public string AuthToken { get; set; } = "";
     
     public List<SonarQubeProject> Projects { get; set; } = new();
 }

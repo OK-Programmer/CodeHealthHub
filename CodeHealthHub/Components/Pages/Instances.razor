@@ -20,10 +20,9 @@
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Add</button>
                 </div>
                 
-                <table class="table w-100">
+                <table class="table w-100 text-center">
                     <thead>
                         <tr>
-                            <th>Instance ID</th>
                             <th>Name</th>
                             <th>URL</th>
                             <th>Actions</th>
@@ -34,10 +33,10 @@
                         {
                             var instance = instances[i];
                             <tr>
-                                <td>@instance.Id</td>
                                 <td>@instance.Name</td>
                                 <td>@URLs.ElementAt(i)</td>
                                 <td>
+                                    <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="() => EditInstance(instance)">Edit</button>
                                     <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteInstance(instance.Id)">Delete</button>
                                 </td>
                             </tr>
@@ -49,7 +48,7 @@
                 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                         <div class="modal-content">
-                            <AddInstanceForm></AddInstanceForm>
+                            <AddInstanceForm Instance="selectedInstance"></AddInstanceForm>
                         </div>
                     </div>
                 </div>
@@ -63,6 +62,9 @@
     public required HttpClient _httpClient;
     List<SonarQubeInstance> instances = new List<SonarQubeInstance>();
     List<string> URLs = new List<string>();
+
+    // Holds the instance to edit (or null for add)
+    SonarQubeInstance? selectedInstance = null;
 
     protected override void OnInitialized()
     {
@@ -97,6 +99,11 @@
             Console.WriteLine($"Error fetching instances: {ex.Message}");
             navigationManager.NavigateTo("/Error");
         }
+    }
+
+    void EditInstance(SonarQubeInstance instance)
+    {
+        selectedInstance = instance;
     }
 
     protected async Task DeleteInstance(int Id) 

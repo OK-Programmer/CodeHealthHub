@@ -1,18 +1,20 @@
 using System.Diagnostics;
 using CodeHealthHub.Data;
 using CodeHealthHub.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace CodeHealthHub;
 
 public class Utility() 
 {
-    private const string authHeader = "Authorization";
-    private readonly static string bearerToken = "Bearer " + Environment.GetEnvironmentVariable("SonarUserToken");
     private static readonly HttpClient client = new();
+    private const string authHeader = "Authorization";
+    // private readonly static string bearerToken = "Bearer " + Environment.GetEnvironmentVariable("SonarUserToken");
     
-    public static async Task<string?> MakeRequest(HttpRequestMessage request) {
+    public static async Task<string?> MakeRequest(HttpRequestMessage request, string authToken) {
         try 
         {
+            string bearerToken = "Bearer " + authToken;
             request.Headers.Add(authHeader, bearerToken);
             HttpResponseMessage? response = await client.SendAsync(request);
             if (response.IsSuccessStatusCode)
@@ -62,10 +64,10 @@ public class Utility()
         return instanceBuilders;
     }
 
-    public static UriBuilder GetInstanceUriBuilder(AppDbContext _dbContext, int Id)
+    public static UriBuilder GetInstanceUriBuilder(AppDbContext _dbContext, int projId)
     {
         UriBuilder builder = _dbContext.SonarQubeInstances
-            .Where(instance => instance.Projects!.Any(p => p.Id == Id))
+            .Where(instance => instance.Projects!.Any(p => p.Id == projId))
             .Select(instance => new UriBuilder()
             {
                 Scheme = instance.Scheme,
@@ -75,6 +77,18 @@ public class Utility()
             .FirstOrDefault()!;
 
         return builder;
+    }
+
+    public static string GetInstanceAuthTokenWithProjId(AppDbContext _dbContext, int projId)
+    {
+        SonarQubeInstance instance =  _dbContext.SonarQubeInstances.Where(i => i.Projects!.Any(p => p.Id == projId)).First();
+        return instance.AuthToken;
+    }
+
+    public static string GetInstanceAuthTokenWithInstId(AppDbContext _dbContext, int instId)
+    {
+        SonarQubeInstance instance =  _dbContext.SonarQubeInstances.Where(i => i.Id == instId).First();
+        return instance.AuthToken;
     }
 
     public static double CalculateUTD(ProjectScan projScan)

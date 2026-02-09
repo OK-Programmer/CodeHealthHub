@@ -1,10 +1,13 @@
-﻿@using CodeHealthHub.Models
+﻿@using CodeHealthHub.Migrations
+@using CodeHealthHub.Models
 @using System.ComponentModel.DataAnnotations
 @using System.Diagnostics.Contracts
 @using System.Text.Json
 @using Microsoft.EntityFrameworkCore.Metadata.Internal
 @inject IHttpClientFactory HttpFactory
 @inject NavigationManager navigationManager
+@inject IJSRuntime JSRuntime
+
 
 <EditForm Model="Model" OnValidSubmit="Submit" FormName="AddInstanceForm">
     <div class="modal-header">
@@ -46,9 +49,17 @@
             <InputNumber @bind-Value="Model!.Port" type="number" class="form-control" 
             placeholder="9000" aria-label="Port" required />
         </div>
+
+        <label for="authToken" class="form-label">
+            Authentication Token
+        </label>
+        <div class="input-group mb-3">
+            <InputText @bind-Value="Model!.AuthToken" type="text" class="form-control" 
+            placeholder="squ_......" aria-label="AuthToken" required />
+        </div>
     </div>
     <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
         <button type="submit" class="btn btn-primary">Submit</button>
     </div>
 </EditForm>
@@ -56,35 +67,76 @@
 @code {
     [SupplyParameterFromForm]
     private SonarqubeInstanceFormModel? Model { get; set; }
+    [Parameter]
+    public SonarQubeInstance? Instance { get; set; }
 
     protected override void OnInitialized() => Model ??= new();
+
+    protected override void OnParametersSet()
+    {
+        if (Instance != null)
+        {
+            Model!.Id = Instance.Id;
+            Model.Name = Instance.Name;
+            Model.Scheme = Instance.Scheme;
+            Model.Host = Instance.Host;
+            Model.Port = Instance.Port;
+            Model.AuthToken = Instance.AuthToken;
+        }
+    }
 
     protected async void Submit() 
     {
         Debug.WriteLine($"Name = {Model?.Name}");
 
-        var addInstanceURL = "api/instances/add";
         var client = HttpFactory.CreateClient("LocalApi");
+        var addInstanceURL = "";
 
         try
         {
-            var response = await client.PostAsJsonAsync<string>(addInstanceURL, JsonSerializer.Serialize<SonarqubeInstanceFormModel>(Model!));
-            
-            if (response.IsSuccessStatusCode) 
+            if (Instance != null) 
             {
-                Debug.WriteLine("New instance added successfully");
-                navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
+                addInstanceURL = "api/instances/edit";
+                var response = await client.PostAsJsonAsync<string>(addInstanceURL, JsonSerializer.Serialize<SonarqubeInstanceFormModel>(Model!));
+                
+                if (response.IsSuccessStatusCode) 
+                {
+                    Debug.WriteLine($"Instance {Instance.Name} edited successfully.");
+                    navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Error: " + response.ReasonPhrase);
+                }
+            }
+            else 
+            {
+                addInstanceURL = "api/instances/add";
+                var response = await client.PostAsJsonAsync<string>(addInstanceURL, JsonSerializer.Serialize<SonarqubeInstanceFormModel>(Model!));
+                
+                if (response.IsSuccessStatusCode) 
+                {
+                    Debug.WriteLine("New instance added successfully");
+                    navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Error: " + response.ReasonPhrase);
+                }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error adding new instance: {ex.Message}");
+            Console.WriteLine($"Error submitting modal: {ex.Message}");
             navigationManager.NavigateTo("/Error");
         }
     }
 
     public class SonarqubeInstanceFormModel() 
     {
+        [Required]
+        public int Id { get; set; }
+        
         [Required]
         public string? Name { get; set; }
 
@@ -97,5 +149,8 @@
         [Required]
         [Range(0, 65535, ErrorMessage = "Port number must be between 0 to 65535")]
         public int? Port { get; set; }
+
+        [Required]
+        public string? AuthToken { get; set; }
     }
 }
