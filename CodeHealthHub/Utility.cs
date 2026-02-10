@@ -158,11 +158,11 @@ public class Utility()
     {
         var grade = score switch
         {
-            5.0f => "E",
-            4.0f => "D",
-            3.0f => "C",
-            2.0f => "B",
-            1.0f => "A",
+            >= 5.0 => "E",
+            >= 4.0 => "D",
+            >= 3.0 => "C",
+            >= 2.0 => "B",
+            >= 1.0 => "A",
             _ => "N/A",
         };
         return grade;

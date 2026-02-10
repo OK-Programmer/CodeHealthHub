@@ -45,39 +45,32 @@
                     <tbody>
                         @for(int i = 0; i < projects.Count; i++)
                         {
-                            var rowIndex = i;
-                            var project = projects[rowIndex];
-                            var tempWeight = project.Weight.ToString("0.00");
-                            var tempNumOfDevs = project.NumOfDevelopers.ToString();
-                            var tempDevCost = project.DeveloperCostPerHour.ToString();
+                            var project = projects[i];
                             <tr>
                                 <td>@project.Name</td>
                                 <td>@project.Key</td>
                                 <td class="text-center">
-                                    @if (!isEditing) { @tempNumOfDevs }
-                                    else { 
-                                        <InputText 
-                                        @bind-Value="tempNumOfDevs"
-                                        class="form-control form-control-sm" 
-                                        @oninput="e => { if (int.TryParse(e.Value?.ToString(), out int result)) { project.NumOfDevelopers = result; } }"/> 
+                                    @if (!isEditing) { @project.NumOfDevelopers }
+                                    else {
+                                        <InputNumber
+                                            @bind-Value="project.NumOfDevelopers"
+                                            class="form-control form-control-sm" />
                                     }
                                 </td>
                                 <td class="text-center">
-                                    @if (!isEditing) { @tempDevCost }
-                                    else { 
-                                        <InputText 
-                                        @bind-Value="tempDevCost"
-                                        class="form-control form-control-sm" 
-                                        @oninput="e => { if (double.TryParse(e.Value?.ToString(), out double result)) { project.DeveloperCostPerHour = result; } }"/> 
+                                    @if (!isEditing) { @project.DeveloperCostPerHour }
+                                    else {
+                                        <InputNumber
+                                            @bind-Value="project.DeveloperCostPerHour"
+                                            class="form-control form-control-sm" />
                                     }
                                 </td>
                                 <td class="text-center">
-                                    @if (!isEditing) { @tempWeight }
-                                    else { 
-                                        <InputText 
-                                        @bind-Value="tempWeight"
-                                        class="form-control form-control-sm" 
-                                        @oninput="e => {if (double.TryParse(e.Value?.ToString(), out double result)) { project.Weight = result; } }"/> 
+                                    @if (!isEditing) { @project.Weight.ToString("0.00") }
+                                    else {
+                                        <InputNumber
+                                            @bind-Value="project.Weight"
+                                            class="form-control form-control-sm" />
                                     }
                                 </td>
                                 <td>
@@ -96,8 +89,8 @@
 @code
 {
     public required HttpClient _httpClient;
-    List<SonarQubeProject> projects = new List<SonarQubeProject>();
-    List<SonarQubeProject> originalProjects = new List<SonarQubeProject>();
+    List<SonarQubeProject> projects { get; set; } = new List<SonarQubeProject>();
+    List<SonarQubeProject> originalProjects { get; set; } = new List<SonarQubeProject>();
     bool isEditing = false;
 
     protected override void OnInitialized()
@@ -108,44 +101,49 @@
     protected override async Task OnInitializedAsync()
     {
         string allProjectsURL = "api/projects/all";
-        projects = await _httpClient.GetFromJsonAsync<List<SonarQubeProject>>(allProjectsURL) ?? new List<SonarQubeProject>();
+        var loadedProjects = await _httpClient.GetFromJsonAsync<List<SonarQubeProject>>(allProjectsURL) ?? new List<SonarQubeProject>();
+        projects.Clear();
+        projects.AddRange(loadedProjects);
     }
 
     // When entering edit mode, backup the original data
     void EnterEditMode()
     {
-        // Deep copy projects (shallow copy is not enough if you edit properties)
-        originalProjects = projects.Select(p => new SonarQubeProject
+        originalProjects.Clear();
+        foreach (var p in projects)
         {
-            Id = p.Id,
-            Name = p.Name,
-            Key = p.Key,
-            LastAnalysisDate = p.LastAnalysisDate,
-            SonarQubeInstanceId = p.SonarQubeInstanceId,
-            NumOfDevelopers = p.NumOfDevelopers,
-            DeveloperCostPerHour = p.DeveloperCostPerHour,
-            Weight = p.Weight
-        }).ToList();
-
+            originalProjects.Add(new SonarQubeProject
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Key = p.Key,
+                LastAnalysisDate = p.LastAnalysisDate,
+                SonarQubeInstanceId = p.SonarQubeInstanceId,
+                NumOfDevelopers = p.NumOfDevelopers,
+                DeveloperCostPerHour = p.DeveloperCostPerHour,
+                Weight = p.Weight
+            });
+        }
         isEditing = true;
     }
 
     // When cancelling, restore the original data
     void CancelEdit()
     {
-        // Restore values
-        projects = originalProjects.Select(p => new SonarQubeProject
+        foreach (var orig in originalProjects)
         {
-            Id = p.Id,
-            Name = p.Name,
-            Key = p.Key,
-            LastAnalysisDate = p.LastAnalysisDate,
-            SonarQubeInstanceId = p.SonarQubeInstanceId,
-            NumOfDevelopers = p.NumOfDevelopers,
-            DeveloperCostPerHour = p.DeveloperCostPerHour,
-            Weight = p.Weight
-        }).ToList();
-
+            var proj = projects.FirstOrDefault(p => p.Id == orig.Id);
+            if (proj != null)
+            {
+                proj.Name = orig.Name;
+                proj.Key = orig.Key;
+                proj.LastAnalysisDate = orig.LastAnalysisDate;
+                proj.SonarQubeInstanceId = orig.SonarQubeInstanceId;
+                proj.NumOfDevelopers = orig.NumOfDevelopers;
+                proj.DeveloperCostPerHour = orig.DeveloperCostPerHour;
+                proj.Weight = orig.Weight;
+            }
+        }
         isEditing = false;
     }
 
@@ -319,7 +317,10 @@
             HttpResponseMessage response = await _httpClient.GetAsync(requestUri);
             if (response.IsSuccessStatusCode)
             {
-                navigationManager.NavigateTo(navigationManager.Uri, forceLoad: true);
+                string allProjectsURL = "api/projects/all";
+                var loadedProjects = await _httpClient.GetFromJsonAsync<List<SonarQubeProject>>(allProjectsURL) ?? new List<SonarQubeProject>();
+                projects.Clear();
+                projects.AddRange(loadedProjects);
             }
             else
             {
@@ -343,7 +344,11 @@
             HttpResponseMessage response = await _httpClient.DeleteAsync(requestUri);
             if (response.IsSuccessStatusCode)
             {
-                projects = projects.Where(i => i.Id != Id).ToList();
+                var projectToRemove = projects.FirstOrDefault(i => i.Id == Id);
+                if (projectToRemove != null)
+                {
+                    projects.Remove(projectToRemove);
+                }
             }
             else
             {
