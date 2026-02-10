@@ -22,6 +22,7 @@
             <thead>
                 <tr>
                     <th scope="col">Project Name</th>
+                    <th scope="col">Health Score</th>
                     <th scope="col">Last Analysis Date</th>
                     <th>Developer Count</th>
                     <th>Developer Cost/Hr</th>
@@ -44,6 +45,7 @@
                     {
                         <tr>
                             <td>@project.Name</td>
+                            <td>@(allProjectHealthScores.ContainsKey(project.Id) ? allProjectHealthScores[project.Id].ToString() : "NIL")</td>
                             <td>@String.Format("{0:yyyy-MM-dd HH:mm:ss}", project.LastAnalysisDate)</td>
                             <td>@project.NumOfDevelopers.ToString()</td>
                             <td>@project.DeveloperCostPerHour.ToString()</td>
@@ -68,10 +70,26 @@
     [Parameter]
     public List<SonarQubeProject>? projects { get; set; }
     [Parameter]
+    public List<ProjectScan>? latestProjScans { get; set; }
+    [Parameter]
     public EventCallback<List<SonarQubeProject>> OnProjectFilterChanged { get; set; }
     private Dictionary<string, bool> projectFilters = new Dictionary<string, bool>();
-    private List<SonarQubeProject>? previousProjects = new List<SonarQubeProject>();
+    private List<SonarQubeProject> previousProjects = new List<SonarQubeProject>();
+    private Dictionary<int, string> allProjectHealthScores = new Dictionary<int, string>();
     private bool showProjectsTable = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (latestProjScans != null)
+        {
+            foreach (ProjectScan projScan in latestProjScans)
+            {
+                double phs = Utility.CalculateAverageProjectHealthScore(projScan);
+
+                allProjectHealthScores[projScan.SonarQubeProjectId] = Utility.TranslateHealthScoreToGrade(phs);
+            }
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

@@ -13,7 +13,7 @@
 
 @code {
     [Parameter]
-    public List<ProjectScan> latestProjMeasures { get; set; } = new List<ProjectScan>();
+    public List<ProjectScan> latestProjScans { get; set; } = new List<ProjectScan>();
     [Parameter]
     public List<SonarQubeProject> projects { get; set; } = new List<SonarQubeProject>();
     private double utd = 0.0;
@@ -24,7 +24,7 @@
     {
         double tempUTD = 0.0;
         double tempUTDCost = 0.0;
-        foreach(ProjectScan projMeasures in latestProjMeasures) // essentially per project
+        foreach(ProjectScan projMeasures in latestProjScans) // essentially per project
         {
             tempUTD += Utility.CalculateUTD(projMeasures);
             tempUTDCost += Utility.CalculateUTDCost(utd, projects.Find(p => p.Id == projMeasures.Id)!);

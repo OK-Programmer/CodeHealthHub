@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using CodeHealthHub.Data;
 using CodeHealthHub.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace CodeHealthHub;
 
@@ -9,7 +8,6 @@ public class Utility()
 {
     private static readonly HttpClient client = new();
     private const string authHeader = "Authorization";
-    // private readonly static string bearerToken = "Bearer " + Environment.GetEnvironmentVariable("SonarUserToken");
     
     public static async Task<string?> MakeRequest(HttpRequestMessage request, string authToken) {
         try 
@@ -124,5 +122,49 @@ public class Utility()
             Console.WriteLine($"Error calculating UTD Cost: {ex.Message}");
             return 0.0;
         }
+    }
+
+    public static double CalculateAverageProjectHealthScore(ProjectScan projScan)
+    {
+        List<Measure>? measureList = projScan.Measures;
+
+        if (measureList == null)
+        {
+            return 0.0;
+        }
+        else
+        {
+            var phs = new ProjectHealthScore()
+            {
+                Vulnerability = (int)float.Parse(measureList.Find(m => m.Metric == "security_rating")?.Value ?? "0.0"),
+                Bugs = (int)float.Parse(measureList.Find(m => m.Metric == "reliability_rating")?.Value ?? "0.0"),
+                CodeSmells = (int)float.Parse(measureList.Find(m => m.Metric == "sqale_rating")?.Value ?? "0.0"),
+                SecHotspots = (int)float.Parse(measureList.Find(m => m.Metric == "security_review_rating")?.Value ?? "0.0"),
+            };
+
+            double avgPHS = Math.Round((double)
+            (
+                phs.Vulnerability + 
+                phs.Bugs + 
+                phs.CodeSmells + 
+                phs.SecHotspots
+            ) / 4);
+
+            return avgPHS;
+        }
+    }
+
+    public static string TranslateHealthScoreToGrade(double score)
+    {
+        var grade = score switch
+        {
+            5.0f => "E",
+            4.0f => "D",
+            3.0f => "C",
+            2.0f => "B",
+            1.0f => "A",
+            _ => "N/A",
+        };
+        return grade;
     }
 }

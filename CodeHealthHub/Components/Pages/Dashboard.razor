@@ -6,21 +6,16 @@
 
 <PageTitle>Dashboard</PageTitle>
 
-@* <div class="header-container">
-    <h1>Dashboard</h1>
-    <hr />
-</div> *@
-
 <!-- Summary Cards -->
 <div class="row mb-4 summary-cards">
     <div class="col">
         <div class="card">
-            <HealthScoreCard latestProjMeasures=@latestScansPerProj weights=@projectWeights></HealthScoreCard>
+            <HealthScoreCard latestProjScans=@latestProjScans weights=@projectWeights></HealthScoreCard>
         </div>
     </div>
     <div class="col">
         <div class="card">
-            <TechDebtCard latestProjMeasures=@latestScansPerProj projects=@projects></TechDebtCard>
+            <TechDebtCard latestProjScans=@latestProjScans projects=@projects></TechDebtCard>
         </div>
     </div>
     <div class="col">
@@ -39,7 +34,7 @@
 <div class="row mb-4">
     <div class="col">
         <div class="card">
-            <ProjectsTable projects=@projects OnProjectFilterChanged="@HandleProjectFilterChanged"></ProjectsTable>
+            <ProjectsTable projects=@projects latestProjScans=@latestProjScans OnProjectFilterChanged="@HandleProjectFilterChanged"></ProjectsTable>
         </div>
     </div>
 </div>
@@ -72,7 +67,7 @@
     private List<PieChartColour> piechartColours = new List<PieChartColour>();
     private List<ProjectIssue> issues = new List<ProjectIssue>();
     private List<double> projectWeights = new List<double>();
-    private List<ProjectScan> latestScansPerProj = new List<ProjectScan>();
+    private List<ProjectScan> latestProjScans = new List<ProjectScan>();
     private int? issuesCount, effortTotal;
 
     protected override async Task OnInitializedAsync()
@@ -145,7 +140,7 @@
                 List<ProjectScan>? measuresResponse = await response.Content.ReadFromJsonAsync<List<ProjectScan>>();
                 if (measuresResponse != null)
                 {
-                    latestScansPerProj.AddRange(measuresResponse);
+                    latestProjScans.AddRange(measuresResponse);
                 }
             }
             else

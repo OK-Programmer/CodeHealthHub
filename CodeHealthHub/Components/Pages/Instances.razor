@@ -17,7 +17,7 @@
         <div class="card">
             <div class="card-body">
                 <div class="col text-end">
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Add</button>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#AddInstanceModal" @onclick="() => ClearInstance()">Add</button>
                 </div>
                 
                 <table class="table w-100 text-center">
@@ -36,7 +36,7 @@
                                 <td>@instance.Name</td>
                                 <td>@URLs.ElementAt(i)</td>
                                 <td>
-                                    <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="() => EditInstance(instance)">Edit</button>
+                                    <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#AddInstanceModal" @onclick="() => EditInstance(instance)">Edit</button>
                                     <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteInstance(instance.Id)">Delete</button>
                                 </td>
                             </tr>
@@ -45,7 +45,7 @@
                 </table>
                 
                 <!-- Modal -->
-                <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal fade" id="AddInstanceModal" tabindex="-1" aria-label="AddInstanceModal">
                     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                         <div class="modal-content">
                             <AddInstanceForm Instance="selectedInstance"></AddInstanceForm>
@@ -62,9 +62,7 @@
     public required HttpClient _httpClient;
     List<SonarQubeInstance> instances = new List<SonarQubeInstance>();
     List<string> URLs = new List<string>();
-
-    // Holds the instance to edit (or null for add)
-    SonarQubeInstance? selectedInstance = null;
+    SonarQubeInstance? selectedInstance { get; set; } = null;
 
     protected override void OnInitialized()
     {
@@ -104,6 +102,11 @@
     void EditInstance(SonarQubeInstance instance)
     {
         selectedInstance = instance;
+    }
+
+    void ClearInstance()
+    {
+        selectedInstance = null;
     }
 
     protected async Task DeleteInstance(int Id) 

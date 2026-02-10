@@ -1,5 +1,4 @@
-﻿@using CodeHealthHub.Models
-@inject IJSRuntime JS
+﻿@inject IJSRuntime JS
 
 <div class="card-body">
     <CardTooltip TooltipText="@tooltipText"/>
@@ -11,19 +10,12 @@
 
 @code {
     [Parameter]
-    public List<ProjectScan> latestProjMeasures { get; set; } = new List<ProjectScan>();
+    public List<ProjectScan> latestProjScans { get; set; } = new List<ProjectScan>();
     [Parameter]
     public List<double> weights { get; set; } = new List<double>();
     private string? overallHealthScore;
     private string tooltipText = "Overall Health Score is calculated based on the weighted average of individual project health scores. Each project's health score is determined by its ratings in Vulnerability, Bugs, Code Smells, and Security Hotspots.";
-
-    public struct ProjectHealthScore
-    {
-        public int Vulnerability;
-        public int Bugs;
-        public int CodeSmells;
-        public int SecHotspots;
-    }
+    
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -35,70 +27,24 @@
 
     protected override void OnParametersSet()
     {
-        List<ProjectHealthScore>? allProjectHealthScores = new List<ProjectHealthScore>();
+        List<double>? allProjAvgHealthScores = new List<double>();
 
-        foreach(ProjectScan projMeasures in latestProjMeasures)
+        foreach(ProjectScan projScan in latestProjScans)
         {
-            List<Measure> measureList = projMeasures.Measures?? new List<Measure>();
-            ProjectHealthScore phs = new ProjectHealthScore(){
-                Vulnerability = (int)float.Parse(measureList.Find(m => m.Metric == "security_rating")?.Value ?? "0.0"),
-                Bugs = (int)float.Parse(measureList.Find(m => m.Metric == "reliability_rating")?.Value ?? "0.0"),
-                CodeSmells = (int)float.Parse(measureList.Find(m => m.Metric == "sqale_rating")?.Value ?? "0.0"),
-                SecHotspots = (int)float.Parse(measureList.Find(m => m.Metric == "security_review_rating")?.Value ?? "0.0"),
-            };
-            allProjectHealthScores.Add(phs);
+            double avgPHS = Utility.CalculateAverageProjectHealthScore(projScan);
+            allProjAvgHealthScores.Add(avgPHS);
         }
 
-        overallHealthScore = CalculateOverallHealthScore(allProjectHealthScores);
-        StateHasChanged();
+        overallHealthScore = CalculateOverallHealthScore(allProjAvgHealthScores);
     }
 
-    protected string CalculateOverallHealthScore(List<ProjectHealthScore> allProjectHealthScores)
+    protected string CalculateOverallHealthScore(List<double> allProjAvgHealthScores)
     {
-        List<double> listOfAvgPHS = new List<double>();
-        @* List<double> weights = (from project in projects select project.Weight).ToList(); *@
-        // for each project, sum up the health scores
-        for(int i = 0; i < allProjectHealthScores.Count; i++)
-        {
-            ProjectHealthScore phs = allProjectHealthScores[i];
-            double avgPHS = Math.Ceiling((double)
-                (
-                    phs.Vulnerability + 
-                    phs.Bugs + 
-                    phs.CodeSmells + 
-                    phs.SecHotspots
-                ) / 4);
-            listOfAvgPHS.Add(avgPHS);
-        }
-        double sum = listOfAvgPHS.Zip(weights, (w, PHS) => w * PHS).Sum();
-        double ohs = Math.Ceiling((1.0/(double)allProjectHealthScores.Count) * sum); // overall health score
-        return TranslateToHealthScore(ohs);
-    }
+        double ohs = allProjAvgHealthScores
+            .Zip(weights, (phs, w) => phs * w)
+            .Sum();
+        @* double ohs = Math.Round(sum / (double)allProjAvgHealthScores.Count); // overall health score *@
 
-    protected string TranslateToHealthScore(double score)
-    {
-        string grade = "";
-        switch(score)
-        {
-            case 5.0f:
-                grade = "E";
-                break;
-            case 4.0f:
-                grade = "D";
-                break;
-            case 3.0f:
-                grade = "C";
-                break;
-            case 2.0f:
-                grade = "B";
-                break;
-            case 1.0f:
-                grade = "A";
-                break;
-            default:
-                grade = "N/A";
-                break;
-        }
-        return grade;
+        return Utility.TranslateHealthScoreToGrade(ohs);
     }
 }

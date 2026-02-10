@@ -30,16 +30,8 @@
                     </div>
                     <button type="button" class="btn btn-outline-dark me-2" @onclick="RefreshIssues">Refresh Issues Data</button>
                 </div>
-                @if (isRefreshing)
-                {
-                    <div class="d-flex justify-content-center align-items-center" style="height: 100px;">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                }
 
-                @if (filteredIssues == null)
+                @if (filteredIssues == null || isRefreshing)
                 {
                     <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
                         <div class="spinner-border text-primary" role="status">
