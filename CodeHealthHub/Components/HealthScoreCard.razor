@@ -43,7 +43,8 @@
         double ohs = allProjAvgHealthScores
             .Zip(weights, (phs, w) => phs * w)
             .Sum();
-        @* double ohs = Math.Round(sum / (double)allProjAvgHealthScores.Count); // overall health score *@
+
+        ohs = Math.Round(ohs, MidpointRounding.AwayFromZero);
 
         return Utility.TranslateHealthScoreToGrade(ohs);
     }

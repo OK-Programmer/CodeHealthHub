@@ -142,13 +142,12 @@ public class Utility()
                 SecHotspots = (int)float.Parse(measureList.Find(m => m.Metric == "security_review_rating")?.Value ?? "0.0"),
             };
 
-            double avgPHS = Math.Round((double)
-            (
+            double avgPHS = Math.Round((double)(
                 phs.Vulnerability + 
                 phs.Bugs + 
                 phs.CodeSmells + 
                 phs.SecHotspots
-            ) / 4);
+            ) / 4, MidpointRounding.AwayFromZero);
 
             return avgPHS;
         }
@@ -158,11 +157,11 @@ public class Utility()
     {
         var grade = score switch
         {
-            >= 5.0 => "E",
-            >= 4.0 => "D",
-            >= 3.0 => "C",
-            >= 2.0 => "B",
-            >= 1.0 => "A",
+            5.0 => "E",
+            4.0 => "D",
+            3.0 => "C",
+            2.0 => "B",
+            1.0 => "A",
             _ => "N/A",
         };
         return grade;
