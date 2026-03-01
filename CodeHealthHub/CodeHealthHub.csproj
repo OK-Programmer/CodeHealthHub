@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Blazored.LocalStorage" Version="4.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="BlazorExpress.ChartJS" Version="1.2.0" />
+    <PackageReference Include="BlazorExpress.ChartJS" Version="1.2.1" />
     <PackageReference Include="BootstrapIcons.AspNetCore" Version="1.13.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid.EntityFrameworkAdapter" Version="10.0.0" />

@@ -10,12 +10,12 @@
     @if (topVulnProjects != null && topVulnProjects.Count() != 0)
     {
         int index = 0;
-        <ol class="card-text text-start">
+        <ol class="card-text list-group list-group-numbered">
             @while (index < topVulnProjects.Count() && index < 3)
             {
                 var proj = topVulnProjects[index];
                 var num = index + 1;
-                <li>@proj.ProjName (@proj.Severity: @proj.VulnCount)</li>
+                <li class="list-group-item p-1">@proj.ProjName (@proj.Severity: @proj.VulnCount)</li>
                 index++;
             }
         </ol>
