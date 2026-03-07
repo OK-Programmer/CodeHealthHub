@@ -33,6 +33,7 @@
     public List<ProjectIssue>? issues { get; set; }
     private List<ListItem> topVulnProjects = new();
     private string tooltipText = "This card highlights the top three projects with the highest number of security vulnerabilities, categorized by severity levels such as Blocker, Critical, Major, and Minor.";
+    private string[] severities = ["BLOCKER", "CRITICAL", "MAJOR", "MINOR"]; //sorted by most to least severe
 
     class ListItem
     {
@@ -48,7 +49,7 @@
         GetMostVulnProjs();
     }
 
-    private void GetMostVulnProjs()
+    @* private void GetMostVulnProjs()
     {
         // Find any proj with blockers
         var projWithBlockers = GetProjWithSeverity("BLOCKER");
@@ -77,38 +78,58 @@
         {
             topVulnProjects.Add(projWithMinors);
         }
+    } *@
+
+    // finds projects with security vulnerabilities from highest to lowest severity,
+    // and inserts into topVulnProjects list until there are 3 projects within it.
+    private void GetMostVulnProjs() {
+        ListItem? listItem;
+        int index = 0;
+        
+        do {
+            listItem = null; //reset variable
+            listItem = GetProjWithSeverity(severities[index]);
+            if (listItem != null)
+            {
+                topVulnProjects.Add(listItem);
+            }
+            else {
+                index++;
+            }
+            if (topVulnProjects.Count() == 3) break;
+        } while (listItem != null);
     }
 
     private ListItem? GetProjWithSeverity(string severity)
     {
-        int? projId = issues!
+        List<int>? projId = issues!
             .Where(i => i.Type == "VULNERABILITY" && i.Severity == severity)
             .GroupBy(i => i.SonarQubeProjectId)
             .OrderByDescending(g => g.Count())
             .Select(g => g.Key)
-            .FirstOrDefault(-1);
+            .ToList();
 
-        if (projId != -1)
+        foreach (int Id in projId)
         {
-            var proj = projects!.Find(p => p.Id == projId);
+            SonarQubeProject? proj = projects!.Find(p => p.Id == Id);
 
             // check if topVulnProjects already contains project
-            var alreadyContains = topVulnProjects.Any(p => p.ProjName == proj!.Name);
+            bool alreadyContains = topVulnProjects.Any(p => p.ProjName == proj!.Name);
             if (alreadyContains)
             {
-                return null;
+                continue;
             }
 
             var vulnCount = issues!
                 .Where(i => 
-                    i.SonarQubeProjectId == projId && 
+                    i.SonarQubeProjectId == Id && 
                     i.Severity == severity && 
                     i.Type == "VULNERABILITY")
                 .Count();
 
             return new ListItem()
             {
-                ProjName = projects!.Find(p => p.Id == projId)!.Name,
+                ProjName = projects!.Find(p => p.Id == Id)!.Name,
                 Severity = severity.ToLower(),
                 VulnCount = vulnCount
             };
