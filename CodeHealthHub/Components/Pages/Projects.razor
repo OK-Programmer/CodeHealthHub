@@ -24,62 +24,83 @@
                         <button class="btn btn-success me-2" @onclick="() => SaveEdit()">Save</button>
                         <button class="btn btn-danger me-2" @onclick="CancelEdit">Cancel</button>
                     }
-                    else
+                    else if (projects.Any())
                     {
                         <button class="btn btn-secondary me-2" @onclick="EnterEditMode">Edit</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-secondary me-2" @onclick="EnterEditMode" disabled>Edit</button>
                     }
                     <button type="button" class="btn btn-outline-dark me-2" @onclick="RefreshProjects">Refresh Project Data</button>
                 </div>
 
-                <table class="table w-100">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Key</th>
-                            <th>Developer Count</th>
-                            <th>Developer Cost/hr</th>
-                            <th>Weight</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for(int i = 0; i < projects.Count; i++)
-                        {
-                            var project = projects[i];
+                @if (projects.Any())
+                {
+                    <table class="table w-100">
+                        <thead>
                             <tr>
-                                <td>@project.Name</td>
-                                <td>@project.Key</td>
-                                <td class="text-center">
-                                    @if (!isEditing) { @project.NumOfDevelopers }
-                                    else {
-                                        <InputNumber
-                                            @bind-Value="project.NumOfDevelopers"
-                                            class="form-control form-control-sm" />
-                                    }
-                                </td>
-                                <td class="text-center">
-                                    @if (!isEditing) { @project.DeveloperCostPerHour }
-                                    else {
-                                        <InputNumber
-                                            @bind-Value="project.DeveloperCostPerHour"
-                                            class="form-control form-control-sm" />
-                                    }
-                                </td>
-                                <td class="text-center">
-                                    @if (!isEditing) { @project.Weight.ToString("0.00") }
-                                    else {
-                                        <InputNumber
-                                            @bind-Value="project.Weight"
-                                            class="form-control form-control-sm" />
-                                    }
-                                </td>
-                                <td>
-                                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteProject(project.Id)">Delete</button>
-                                </td>
+                                <th>Name</th>
+                                <th>Key</th>
+                                <th>Developer Count</th>
+                                <th>Developer Cost/hr</th>
+                                <th>Weight</th>
+                                <th></th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @for(int i = 0; i < projects.Count; i++)
+                            {
+                                var project = projects[i];
+                                <tr>
+                                    <td>@project.Name</td>
+                                    <td>@project.Key</td>
+                                    <td class="text-center">
+                                        @if (!isEditing) { @project.NumOfDevelopers }
+                                        else {
+                                            <InputNumber
+                                                @bind-Value="project.NumOfDevelopers"
+                                                class="form-control form-control-sm" />
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (!isEditing) { @project.DeveloperCostPerHour }
+                                        else {
+                                            <InputNumber
+                                                @bind-Value="project.DeveloperCostPerHour"
+                                                class="form-control form-control-sm" />
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (!isEditing) { @project.Weight.ToString("0.00") }
+                                        else {
+                                            <InputNumber
+                                                @bind-Value="project.Weight"
+                                                class="form-control form-control-sm" />
+                                        }
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteProject(project.Id)">Delete</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else if (isRefreshing)
+                {
+                    <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else 
+                {
+                    <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+                        <strong>No project data found.</strong>
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -92,10 +113,12 @@
     List<SonarQubeProject> projects { get; set; } = new List<SonarQubeProject>();
     List<SonarQubeProject> originalProjects { get; set; } = new List<SonarQubeProject>();
     bool isEditing = false;
+    bool isRefreshing;
 
     protected override void OnInitialized()
     {
         _httpClient = HttpFactory.CreateClient("LocalApi");
+        isRefreshing = false;
     }
 
     protected override async Task OnInitializedAsync()
@@ -312,6 +335,7 @@
     {
         try
         {
+            isRefreshing = true;
             string requestUri = "api/projects/refresh";
             Debug.WriteLine($"Calling URL: {_httpClient.BaseAddress}{requestUri}");
             HttpResponseMessage response = await _httpClient.GetAsync(requestUri);
@@ -327,6 +351,7 @@
                 await JSRuntime.InvokeVoidAsync("alert", "Error updating projects: " + response.ReasonPhrase);
                 Debug.WriteLine("Error refreshing projects data: " + response.ReasonPhrase);
             }
+            isRefreshing = false;
         }
         catch (Exception e)
         {

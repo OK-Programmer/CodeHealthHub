@@ -9,6 +9,7 @@ using System.Globalization;
 using System.ComponentModel;
 using CodeHealthHub.Models.JsonTypes;
 using CodeHealthHub.Components;
+using Microsoft.Data.Sqlite;
 
 namespace CodeHealthHub.Controllers;
 
@@ -21,30 +22,46 @@ public class IssuesController(AppDbContext dbContext) : ControllerBase
     [HttpGet("all")]
     public async Task<ActionResult> GetIssuesData()
     {
-        List<ProjectIssue>? allIssues = await _dbContext.ProjectIssues
-            .Include(i => i.SonarQubeProject!.SonarQubeInstance)
-            .Where(i => i.Status == "OPEN")
-            .ToListAsync();
-        return Ok(allIssues);
+        try
+        {
+            List<ProjectIssue>? allIssues = await _dbContext.ProjectIssues
+                .Include(i => i.SonarQubeProject!.SonarQubeInstance)
+                .Where(i => i.Status == "OPEN")
+                .ToListAsync();
+            return Ok(allIssues);
+        }
+        catch (SqliteException sqlExcep)
+        {
+            Debug.WriteLine($"SqliteException while getting projects: {sqlExcep}");
+            return Ok(new List<ProjectIssue>());
+        }
     }
 
     [HttpGet("issue-link")]
     public async Task<ActionResult> GetIssueInstanceURL(int projectId)
     {
-        SonarQubeProject? project = await _dbContext.SonarQubeProjects
-            .Include(p => p.SonarQubeInstance)
-            .FirstOrDefaultAsync(p => p.Id == projectId);
-        if (project != null)
+        try
         {
-            var instance = project.SonarQubeInstance;
-            var scheme = instance.Scheme;
-            var host = instance.Host;
-            var port = instance.Port;
-            var link = $"{scheme}://{host}:{port}";
-            return Ok(new { url = link });
+            SonarQubeProject? project = await _dbContext.SonarQubeProjects
+                .Include(p => p.SonarQubeInstance)
+                .FirstOrDefaultAsync(p => p.Id == projectId);
+            if (project != null)
+            {
+                var instance = project.SonarQubeInstance;
+                var scheme = instance.Scheme;
+                var host = instance.Host;
+                var port = instance.Port;
+                var link = $"{scheme}://{host}:{port}";
+                return Ok(new { url = link });
+            }
+            else
+            {
+                return NotFound();
+            }
         }
-        else
+        catch (SqliteException sqlExcep)
         {
+            Debug.WriteLine($"SqliteException while getting projects: {sqlExcep}");
             return NotFound();
         }
     }
@@ -58,7 +75,6 @@ public class IssuesController(AppDbContext dbContext) : ControllerBase
             Debug.WriteLine("GetIssues() could not find any SonarQubeInstances");
             return NotFound("GetIssues() could not find any SonarQubeInstances");
         }
-
 
         // First delete existing issues data
         await _dbContext.ProjectIssues.ExecuteDeleteAsync();

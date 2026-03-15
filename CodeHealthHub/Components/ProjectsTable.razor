@@ -19,28 +19,28 @@
 {
     <div class="table-responsive p-3">
         <table class="table text-center">
-            <thead>
-                <tr>
-                    <th scope="col">Project Name</th>
-                    <th scope="col">Health Score</th>
-                    <th scope="col">Last Analysis Date</th>
-                    <th>Developer Count</th>
-                    <th>Developer Cost/Hr</th>
-                    <th scope="col">Weight</th>
-                    <th scope="col">Filter</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (projects == null) 
-                {
-                    <p>Loading...</p>
-                }
-                else if (!projects.Any())
-                {
-                    <p>No project data found.</p>
-                }
-                else
-                {
+            @if (projects == null) 
+            {
+                <p>Loading...</p>
+            }
+            else if (!projects.Any())
+            {
+                <p>No project data found.</p>
+            }
+            else
+            {
+                <thead>
+                    <tr>
+                        <th scope="col">Project Name</th>
+                        <th scope="col">Health Score</th>
+                        <th scope="col">Last Analysis Date</th>
+                        <th>Developer Count</th>
+                        <th>Developer Cost/Hr</th>
+                        <th scope="col">Weight</th>
+                        <th scope="col">Filter</th>
+                    </tr>
+                </thead>
+                <tbody>
                     @foreach(SonarQubeProject project in projects)
                     {
                         <tr>
@@ -59,8 +59,8 @@
                             </td>
                         </tr>
                     }
-                }
-            </tbody>
+                </tbody>
+            }
         </table>
     </div>
 }

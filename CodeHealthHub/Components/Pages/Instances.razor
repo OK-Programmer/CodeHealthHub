@@ -20,29 +20,38 @@
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#AddInstanceModal" @onclick="() => ClearInstance()">Add</button>
                 </div>
                 
-                <table class="table w-100 text-center">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>URL</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for(int i = 0; i < instances.Count; i++)
-                        {
-                            var instance = instances[i];
+                @if (instances.Any())
+                {
+                    <table class="table w-100 text-center">
+                        <thead>
                             <tr>
-                                <td>@instance.Name</td>
-                                <td>@URLs.ElementAt(i)</td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#AddInstanceModal" @onclick="() => EditInstance(instance)">Edit</button>
-                                    <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteInstance(instance.Id)">Delete</button>
-                                </td>
+                                <th>Name</th>
+                                <th>URL</th>
+                                <th>Actions</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @for(int i = 0; i < instances.Count; i++)
+                            {
+                                var instance = instances[i];
+                                <tr>
+                                    <td>@instance.Name</td>
+                                    <td>@URLs.ElementAt(i)</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#AddInstanceModal" @onclick="() => EditInstance(instance)">Edit</button>
+                                        <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteInstance(instance.Id)">Delete</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+                        <strong>No instances found.</strong>
+                    </div>
+                }
                 
                 <!-- Modal -->
                 <div class="modal fade" id="AddInstanceModal" tabindex="-1" aria-label="AddInstanceModal">

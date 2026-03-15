@@ -152,6 +152,8 @@
 
     #endregion  Data Preparation
 
+    SettingsViewModel settingsViewModel = new SettingsViewModel();
+
     public void AddColourToList(string category, List<string> colours)
     {
         PieChartColour? pcColour = piechartColours!.Find(c => c.CategoryName?.ToLower() == category);
@@ -159,6 +161,33 @@
         {
             string hexcode = pcColour.HexCode!;
             Color colour = ConvertHexToColour(hexcode);
+            colours.Add(colour.ToRgbString());
+        }
+        else
+        {
+            // use default colours
+            Color colour = new();
+            switch (category)
+            {
+                case "info":
+                    colour = ConvertHexToColour(settingsViewModel.InfoColour);
+                    break;
+                case "minor":
+                    colour = ConvertHexToColour(settingsViewModel.MinorColour);
+                    break;
+                case "major":
+                    colour = ConvertHexToColour(settingsViewModel.MajorColour);
+                    break;
+                case "critical":
+                    colour = ConvertHexToColour(settingsViewModel.CriticalColour);
+                    break;
+                case "blocker":
+                    colour = ConvertHexToColour(settingsViewModel.BlockerColour);
+                    break;
+                case "default":
+                    colour = ConvertHexToColour(settingsViewModel.DefaultColour);
+                    break;
+            }
             colours.Add(colour.ToRgbString());
         }
     }
