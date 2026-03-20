@@ -1,0 +1,9 @@
+services:
+  codehealthhub:
+    image: codehealthhub:latest
+    build: .
+    ports:
+      - "5000:80"
+    environment:
+      - ConnectionStrings__CodeHealthHubDB=${DATABASE_CONNECTION_STRING:-Data Source=/app/data/CodeHealthHub.db}
+    restart: unless-stopped
