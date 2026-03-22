@@ -14,6 +14,11 @@ FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 
+# Set environment variables
+ENV ASPNETCORE_URLS=http://+:80
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV IS_CONTAINER=true
+
 # Ensure data directory exists with proper permissions
 RUN mkdir -p /app/data && chmod 777 /app/data
 

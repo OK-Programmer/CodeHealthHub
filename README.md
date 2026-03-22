@@ -3,16 +3,24 @@
 ### Prerequisites
 - Docker and Docker Compose installed
 
-### Quick Start (SQLite - Default)
-1. Clone the repository
-2. Run `docker-compose up -d`
-3. Access at http://localhost:5000
+### Quick Start (Ephemeral SQLite - Testing only)
+``` shell
+docker run -p 5000:80 `
+    --name codehealthhub `
+    -v ${pwd}/keys:/app/keys `
+    -d leoohwizvision/codehealthhub:latest
+```
+Access at http://localhost:5000
+**Warning**: SQLite mode is ephemeral. All data will be lost when the container stops.
 
-### Using SQL Server
-1. Set environment variables in .env file:
-    - e.g. DATABASE_CONNECTION_STRING="Server=localhost;Database=codehealthhub;User Id=sa;Password=YourPassword;TrustServerCertificate=True"
-    - DATABASE_PROVIDER="sqlserver"
-2. Run `docker-compose up -d`
+### Using SQL Server (Persistent Database)
+``` shell
+docker run -p 5000:80 `
+    -e DATABASE_CONNECTION_STRING="Server=your-sql-server;Database=codehealthhub;User Id=sa;Password=secret;TrustServerCertificate=True" `
+    -e DATABASE_PROVIDER="sqlserver" `
+    leoohwizvision/codehealthhub:latest
+```
+Access at http://localhost:5000
 
 ## Adding SonarQube Instances to CodeHealthHub
 
