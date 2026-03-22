@@ -37,15 +37,23 @@ public class InstancesController(AppDbContext dbContext) : ControllerBase
                     i.Host == instance.Host && 
                     i.Port == instance.Port &&
                     i.AuthToken == instance.AuthToken);
+                    
                 if (!instanceExists)
                 {
-                    await _dbContext.SonarQubeInstances.AddAsync(instance);
-                    await _dbContext.SaveChangesAsync();
-                    return Created();
+                    if (await PingInstance(instance))
+                    {
+                        await _dbContext.SonarQubeInstances.AddAsync(instance);
+                        await _dbContext.SaveChangesAsync();
+                        return Created();
+                    }
+                    else
+                    {
+                        return BadRequest("Instance is not responding.");
+                    }
                 }
                 else
                 {
-                    return BadRequest();
+                    return BadRequest("Instance already exists.");
                 }
             }
             else
@@ -120,6 +128,31 @@ public class InstancesController(AppDbContext dbContext) : ControllerBase
         {
             Debug.WriteLine("Error: Deleting instance failed, " + e.Message);
             return NotFound();
+        }
+    }
+
+    //Ping the given instance address, should return 'pong' of the instance is up and running
+    public async Task<bool> PingInstance(SonarQubeInstance instance)
+    {
+        UriBuilder builder = new()
+        {
+            Scheme = instance.Scheme,
+            Host = instance.Host,
+            Port = instance.Port,
+            Path = "/api/system/ping"
+        };
+        Uri uri = builder.Uri;
+        HttpRequestMessage request = new(HttpMethod.Get, uri);
+        string? response = await Utility.MakeRequest(request, instance.AuthToken);
+        if (response != null && response.Equals("pong"))
+        {
+            Debug.Print("Pinging new instance returned pong.");
+            return true;
+        }
+        else
+        {
+            Debug.Print("Pinging new instance did not return response.");
+            return false;
         }
     }
 }

@@ -1,0 +1,13 @@
+services:
+  codehealthhub:
+    image: codehealthhub:latest
+    build: .
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__CodeHealthHubDB=${DATABASE_CONNECTION_STRING:-Data Source=/app/Data/CodeHealthHub.db}
+    volumes:
+      - ./Data:/app/Data
+    restart: unless-stopped

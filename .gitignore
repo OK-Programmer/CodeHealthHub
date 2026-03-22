@@ -5,3 +5,4 @@ CodeHealthHub/bin
 CodeHealthHub/*.db
 CodeHealthHub/*.db-shm
 CodeHealthHub/*.db-wal
+CodeHealthHub/Data/*
