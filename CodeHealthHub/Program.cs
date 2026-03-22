@@ -33,9 +33,12 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddControllers();  // Add this to enable API controllers
 
+var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5030";
+apiBaseUrl = apiBaseUrl.TrimEnd('/');
+
 builder.Services.AddHttpClient("LocalApi", client =>
 {
-   client.BaseAddress = new Uri(builder.Configuration["AppSettings:BaseUrl"] ?? "http://localhost:5000");
+    client.BaseAddress = new Uri(apiBaseUrl);
 });
 
 

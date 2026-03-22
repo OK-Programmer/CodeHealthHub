@@ -13,4 +13,8 @@ RUN dotnet publish -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
+
+# Ensure data directory exists with proper permissions
+RUN mkdir -p /app/data && chmod 777 /app/data
+
 ENTRYPOINT ["dotnet", "CodeHealthHub.dll"]
