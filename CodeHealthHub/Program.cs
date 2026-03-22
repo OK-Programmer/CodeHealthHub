@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Blazored.LocalStorage;
 using CodeHealthHub.Components;
 using CodeHealthHub.Data;
@@ -10,35 +11,21 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddBlazoredLocalStorage();
 
 // Configure DbContext based on connection string or provider setting
-var connectionString = builder.Configuration.GetConnectionString("CodeHealthHubDB");
-var databaseProvider = builder.Configuration["DatabaseProvider"] ?? "sqlite";
-
-// For SQLite ephemeral mode, ensure directory exists
-if (databaseProvider.ToLower() == "sqlite" && connectionString?.Contains("Data Source=") == true)
+string? connectionString;
+if (Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING") == null)
 {
-    // Extract the path and ensure directory exists
-    var dataSource = connectionString.Replace("Data Source=", "");
-    var directory = Path.GetDirectoryName(dataSource);
-    
-    if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-    {
-        Directory.CreateDirectory(directory);
-    }
+    Debug.WriteLine("No connection string given.");
+    throw new InvalidOperationException("Connection string required for Database connection. Set DATABASE_CONNECTION_STRING environment variable.");
+}
+else
+{
+    connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING");
 }
 
+// Choose context builder based on connection string, default is for SQLite
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
 {
-    switch (databaseProvider.ToLower())
-    {
-        case "sqlserver":
-            if (string.IsNullOrEmpty(connectionString))
-                throw new InvalidOperationException("Connection string required for SQL Server. Set DATABASE_CONNECTION_STRING environment variable.");
-            options.UseSqlServer(connectionString);
-            break;
-        default:
-            options.UseSqlite(connectionString ?? "Data Source=/app/Data/CodeHealthHub.db");
-            break;
-    }
+    options.UseSqlServer(connectionString);
 });
 
 builder.Services.AddRazorComponents()

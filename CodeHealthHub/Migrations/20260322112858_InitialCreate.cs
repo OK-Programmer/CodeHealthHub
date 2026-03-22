@@ -15,10 +15,10 @@ namespace CodeHealthHub.Migrations
                 name: "PieChartColours",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    CategoryName = table.Column<string>(type: "TEXT", nullable: true),
-                    HexCode = table.Column<string>(type: "TEXT", nullable: true)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CategoryName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    HexCode = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -29,13 +29,13 @@ namespace CodeHealthHub.Migrations
                 name: "SonarQubeInstances",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Scheme = table.Column<string>(type: "TEXT", nullable: false),
-                    Host = table.Column<string>(type: "TEXT", nullable: false),
-                    Port = table.Column<int>(type: "INTEGER", nullable: false),
-                    AuthToken = table.Column<string>(type: "TEXT", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Scheme = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Host = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Port = table.Column<int>(type: "int", nullable: false),
+                    AuthToken = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -46,15 +46,15 @@ namespace CodeHealthHub.Migrations
                 name: "SonarQubeProjects",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Key = table.Column<string>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    LastAnalysisDate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    Weight = table.Column<double>(type: "REAL", nullable: false),
-                    NumOfDevelopers = table.Column<int>(type: "INTEGER", nullable: false),
-                    DeveloperCostPerHour = table.Column<double>(type: "REAL", nullable: false),
-                    SonarQubeInstanceId = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Key = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    LastAnalysisDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Weight = table.Column<double>(type: "float", nullable: false),
+                    NumOfDevelopers = table.Column<int>(type: "int", nullable: false),
+                    DeveloperCostPerHour = table.Column<double>(type: "float", nullable: false),
+                    SonarQubeInstanceId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -71,17 +71,17 @@ namespace CodeHealthHub.Migrations
                 name: "ProjectIssues",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    IssueKey = table.Column<string>(type: "TEXT", nullable: false),
-                    Severity = table.Column<string>(type: "TEXT", nullable: false),
-                    Project = table.Column<string>(type: "TEXT", nullable: false),
-                    Effort = table.Column<int>(type: "INTEGER", nullable: true),
-                    Debt = table.Column<int>(type: "INTEGER", nullable: true),
-                    Type = table.Column<string>(type: "TEXT", nullable: false),
-                    Status = table.Column<string>(type: "TEXT", nullable: false),
-                    CreationDate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    SonarQubeProjectId = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    IssueKey = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Severity = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Project = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Effort = table.Column<int>(type: "int", nullable: true),
+                    Debt = table.Column<int>(type: "int", nullable: true),
+                    Type = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    SonarQubeProjectId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -98,10 +98,10 @@ namespace CodeHealthHub.Migrations
                 name: "ProjectScans",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    SonarQubeProjectId = table.Column<int>(type: "INTEGER", nullable: false),
-                    AnalysisDate = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    SonarQubeProjectId = table.Column<int>(type: "int", nullable: false),
+                    AnalysisDate = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -118,11 +118,11 @@ namespace CodeHealthHub.Migrations
                 name: "Measures",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Metric = table.Column<string>(type: "TEXT", nullable: true),
-                    Value = table.Column<string>(type: "TEXT", nullable: true),
-                    ProjectScanId = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Metric = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Value = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ProjectScanId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {

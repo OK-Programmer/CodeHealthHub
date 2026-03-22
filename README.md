@@ -3,21 +3,19 @@
 ### Prerequisites
 - Docker installed
 
-### Quick Start (Ephemeral SQLite - Testing only)
-``` shell
-docker run -p 5000:80 `
-    --name codehealthhub `
-    -v ${pwd}/keys:/app/keys `
-    -d leoohwizvision/codehealthhub:latest
-```
-**Warning**: SQLite mode is ephemeral. All data will be lost when the container stops.
-
 ### Using SQL Server (Persistent Database)
 ``` shell
 docker run -p 5000:80 `
     --name codehealthhub `
-    -e DATABASE_CONNECTION_STRING="Server=your-sql-server;Database=codehealthhub;User Id=sa;Password=secret;TrustServerCertificate=True" `
-    -e DATABASE_PROVIDER="sqlserver" `
+    -e DATABASE_CONNECTION_STRING="Server=serveraddress;Database=databasename;User Id=yourusername;Password=yourpassword;TrustServerCertificate=True" `
+    -v ${pwd}/keys:/app/keys `
+    -d leoohwizvision/codehealthhub:latest
+```
+Or using .env file
+``` shell
+docker run -p 5000:80 `
+    --name codehealthhub `
+    --env-file .env `
     -v ${pwd}/keys:/app/keys `
     -d leoohwizvision/codehealthhub:latest
 ```

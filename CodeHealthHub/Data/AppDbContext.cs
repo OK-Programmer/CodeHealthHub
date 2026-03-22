@@ -1,4 +1,3 @@
-using System;
 using CodeHealthHub.Models;
 using Microsoft.EntityFrameworkCore;
 
