@@ -1,7 +1,7 @@
 ## Running CodeHealthHub with Docker
 
 ### Prerequisites
-- Docker and Docker Compose installed
+- Docker installed
 
 ### Quick Start (Ephemeral SQLite - Testing only)
 ``` shell
@@ -10,17 +10,17 @@ docker run -p 5000:80 `
     -v ${pwd}/keys:/app/keys `
     -d leoohwizvision/codehealthhub:latest
 ```
-Access at http://localhost:5000
 **Warning**: SQLite mode is ephemeral. All data will be lost when the container stops.
 
 ### Using SQL Server (Persistent Database)
 ``` shell
 docker run -p 5000:80 `
+    --name codehealthhub `
     -e DATABASE_CONNECTION_STRING="Server=your-sql-server;Database=codehealthhub;User Id=sa;Password=secret;TrustServerCertificate=True" `
     -e DATABASE_PROVIDER="sqlserver" `
-    leoohwizvision/codehealthhub:latest
+    -v ${pwd}/keys:/app/keys `
+    -d leoohwizvision/codehealthhub:latest
 ```
-Access at http://localhost:5000
 
 ## Adding SonarQube Instances to CodeHealthHub
 
