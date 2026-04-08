@@ -1,6 +1,0 @@
-WebProgramming-LMS (maven):
-mvn clean verify sonar:sonar `
--Dsonar.projectKey=WebProgramming-LMS `
--Dsonar.projectName='WebProgramming-LMS' `
--Dsonar.host.url=http://localhost:9000 `
--Dsonar.token=sqp_61b3369ea1d3374a3078b57c30bc977fbdc847e9
