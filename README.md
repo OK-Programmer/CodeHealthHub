@@ -11,7 +11,8 @@ docker run -p 5000:80 `
     -v codehealthhub_keys:/app/keys `
     -d leoohwizvision/codehealthhub:latest
 ```
-Or using .env file
+
+### Using .env file
 ``` shell
 docker run -p 5000:80 `
     --name codehealthhub `
@@ -19,6 +20,9 @@ docker run -p 5000:80 `
     -v codehealthhub_keys:/app/keys `
     -d leoohwizvision/codehealthhub:latest
 ```
+
+### Docker image link
+https://hub.docker.com/r/leoohwizvision/codehealthhub
 
 ## Adding SonarQube Instances to CodeHealthHub
 
