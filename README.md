@@ -8,7 +8,7 @@
 docker run -p 5000:80 `
     --name codehealthhub `
     -e DATABASE_CONNECTION_STRING="Server=serveraddress;Database=databasename;User Id=yourusername;Password=yourpassword;TrustServerCertificate=True" `
-    -v ${pwd}/keys:/app/keys `
+    -v codehealthhub_keys:/app/keys `
     -d leoohwizvision/codehealthhub:latest
 ```
 Or using .env file
@@ -16,7 +16,7 @@ Or using .env file
 docker run -p 5000:80 `
     --name codehealthhub `
     --env-file .env `
-    -v ${pwd}/keys:/app/keys `
+    -v codehealthhub_keys:/app/keys `
     -d leoohwizvision/codehealthhub:latest
 ```
 
