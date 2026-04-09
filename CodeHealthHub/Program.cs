@@ -12,7 +12,11 @@ builder.Services.AddBlazoredLocalStorage();
 
 // Configure DbContext based on connection string or provider setting
 string? connectionString;
-if (Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING") == null)
+if (builder.Environment.IsDevelopment())
+{
+    connectionString = builder.Configuration.GetConnectionString("CodeHealthHubDB");
+}
+else if (Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING") == null)
 {
     Debug.WriteLine("No connection string given.");
     throw new InvalidOperationException("Connection string required for Database connection. Set DATABASE_CONNECTION_STRING environment variable.");
@@ -25,7 +29,14 @@ else
 // Choose context builder based on connection string, default is for SQLite
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
 {
-    options.UseSqlServer(connectionString);
+    if (builder.Environment.IsDevelopment())
+    {
+        options.UseSqlite(connectionString);
+    }
+    else
+    {
+        options.UseSqlServer(connectionString);
+    }
 });
 
 builder.Services.AddRazorComponents()
@@ -45,7 +56,7 @@ builder.Services.AddHttpClient("LocalApi", (sp, client) =>
     }
     else
     {
-        client.BaseAddress = new Uri("http://localhost:5000");
+        client.BaseAddress = new Uri("http://localhost:5030");
     }
 });
 
@@ -61,8 +72,14 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    // Cannot use HSTS in development because it can cause issues with self-signed certificates and local testing
     app.UseHsts();
     app.UseMigrationsEndPoint();
+
+    // Apply migrations at startup
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dbContext.Database.Migrate();
 }
 
 app.UseRouting();
@@ -74,12 +91,5 @@ app.UseAntiforgery();
 app.MapControllers();  // This maps API controller routes
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-// Apply migrations at startup
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    dbContext.Database.Migrate();
-}
 
 app.Run();
